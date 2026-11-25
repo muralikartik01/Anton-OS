@@ -1,0 +1,20 @@
+{
+  "description": "Too few samples to trust. Must abstain and never downsize.",
+  "config": {
+    "cluster_id": "0101-thin",
+    "cluster_name": "adhoc-explore",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": 3,
+    "min_autoscale_workers": null,
+    "max_autoscale_workers": null,
+    "auto_termination_minutes": 60,
+    "cluster_source": "UI"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": 3,
+    "worker": {"sample_minutes": 4, "cpu_p50": 12.0, "cpu_p95": 20.0, "cpu_max": 25.0, "mem_p95": 30.0, "mem_max": 35.0, "swap_max": 0.0},
+    "driver": {"sample_minutes": 4, "cpu_p50": 10.0, "cpu_p95": 15.0, "cpu_max": 20.0, "mem_p95": 25.0, "mem_max": 30.0, "swap_max": 0.0}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "description": "CPU-bound while pinned at the autoscale ceiling. Raise max workers, keep node type.",
+  "config": {
+    "cluster_id": "0101-capped",
+    "cluster_name": "streaming-enrich",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": null,
+    "min_autoscale_workers": 2,
+    "max_autoscale_workers": 8,
+    "auto_termination_minutes": 10,
+    "cluster_source": "UI"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": 8,
+    "worker": {"sample_minutes": 210, "cpu_p50": 78.0, "cpu_p95": 86.0, "cpu_max": 95.0, "mem_p95": 52.0, "mem_max": 60.0, "swap_max": 0.0},
+    "driver": {"sample_minutes": 210, "cpu_p50": 35.0, "cpu_p95": 48.0, "cpu_max": 58.0, "mem_p95": 44.0, "mem_max": 50.0, "swap_max": 0.0}
+  }
+}

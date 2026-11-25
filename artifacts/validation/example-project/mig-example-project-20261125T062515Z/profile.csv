@@ -1,0 +1,14 @@
+table,column,data_type,row_count,null_count,null_pct,distinct_count,min,max,avg,min_len,max_len,is_key_candidate
+raw_customers,customer_id,text,5,0,0,5,,,,,,true
+raw_customers,full_name,text,5,0,0,,,,,,,
+raw_customers,email,text,5,1,20,,,,,,,
+raw_customers,signup_date,text,5,0,0,,2023-11-05,2026-02-18,,,,
+raw_customers,_landed_at,timestamptz,5,0,0,1,2026-11-24 17:29:29.713546+00,2026-11-24 17:29:29.713546+00,,,,
+raw_products,sku,text,5,0,0,5,,,,,,true
+raw_products,product_name,text,5,0,0,,,,,,,
+raw_products,category,text,5,0,0,5,,,,,,
+raw_orders,order_id,text,5,0,0,5,,,,,,true
+raw_orders,store_id,text,5,0,0,,,,,,,
+raw_orders,order_timestamp,text,5,0,0,,2026-11-20 10:15:00,2026-11-23 18:20:00,,,,
+raw_order_items,item_id,text,7,0,0,7,,,,,,true
+raw_order_items,quantity,text,7,0,0,,1,2,,,,

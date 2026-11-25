@@ -1,0 +1,52 @@
+{
+  "inputs": {
+    "load_strategy": "append",
+    "sources": [
+      {
+        "fqn": "uc.fact_a",
+        "size_bytes": 193273528320,
+        "num_files": 6000,
+        "row_count": 900000000,
+        "role": "fact"
+      },
+      {
+        "fqn": "uc.fact_b",
+        "size_bytes": 150323855360,
+        "num_files": 5000,
+        "row_count": 750000000,
+        "role": "fact"
+      }
+    ],
+    "joins": [
+      {
+        "type": "inner",
+        "right_role": "fact",
+        "left_size_bytes": 193273528320,
+        "right_size_bytes": 150323855360,
+        "broadcastable": false
+      },
+      {
+        "type": "left",
+        "right_role": "dim",
+        "right_size_bytes": 419430400
+      }
+    ],
+    "schedule": {
+      "cadence": "daily",
+      "runs_per_month": 30,
+      "criticality": "medium"
+    },
+    "pricing": {
+      "jobs_dbu_usd": 0.3,
+      "all_purpose_dbu_usd": 0.55,
+      "photon_dbu_mult": 2.0
+    },
+    "analog": {
+      "job_id": "join-fact-analog",
+      "dbus_per_hour": 48,
+      "runtime_hours": 1.1,
+      "size_bytes": 322122547200,
+      "load_strategy": "append"
+    }
+  }
+}

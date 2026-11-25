@@ -1,0 +1,85 @@
+{
+  "skill_name": "databricks-cluster-sizer",
+  "config": {
+    "models": ["claude-sonnet-4.6"],
+    "executor_model": "claude-sonnet-4.6",
+    "analyzer_model": "claude-sonnet-4.6",
+    "runs_per_configuration": 1,
+    "notes": "These agent evals run ONLY on Sonnet 4.6 (executor and analyzer). The authoritative correctness gate remains the offline deterministic suite (python evals/run_evals.py)."
+  },
+  "evals": [
+    {
+      "id": 0,
+      "name": "weekly-noncritical-cost-default",
+      "prompt": "Our Databricks job 'weekly-rollup' runs once a week and it's tagged criticality=low. It's 6x Standard_D16ds_v5 workers (same driver). Across the last 20 runs, worker CPU peaks around 27% and memory around 31% with no swap, and each run costs about $12.40 and takes ~22 minutes. It is not time-sensitive. How should I size it, and can you give me cost-vs-performance options so I can pick? I care most about cost here.",
+      "expected_output": "Diagnoses over-provisioning and, because the job is weekly + low-criticality, recommends the Cost-optimized tier as the default. Presents THREE ranked options (Cost / Balanced / Performance) with a smaller node (e.g. Standard_D8ds_v5) for Cost/Balanced. For each option it projects BOTH cost (Δ$ and Δ%, e.g. a meaningful per-run saving and an annualized figure) AND runtime (a Δ% range acknowledging the smaller node may run longer). Marks Cost as Recommended and never silently hides the runtime trade-off.",
+      "assertions": [
+        {"text": "Diagnoses the cluster as over-provisioned (cites low CPU and memory, no swap)"},
+        {"text": "Recognizes the job as weekly cadence and low criticality and biases toward cheaper downsizing"},
+        {"text": "Presents three ranked options: Cost-optimized, Balanced, and Performance-optimized"},
+        {"text": "Recommends the Cost-optimized tier as the default for this weekly/non-critical job"},
+        {"text": "Projects cost for the recommended option in dollars (per-run and/or annualized) AND as a percentage"},
+        {"text": "Projects a runtime impact range for the downsized options (acknowledges a possible slowdown), not cost alone"},
+        {"text": "Does NOT add resources and provides an apply artifact (new_cluster JSON) for the chosen option"}
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "daily-balanced-tradeoff",
+      "prompt": "The 'daily-sales-agg' Databricks job runs every day. It's 6x Standard_D16ds_v5 (same driver). Over the last 20 runs CPU peaks ~28%, memory ~33%, no swap, ~$9.80 and ~15 minutes per run. It's important but not on a hard SLA. I want to cut cost but I don't want it to get noticeably slower. Walk me through the trade-offs.",
+      "expected_output": "Identifies it as over-provisioned but, because the job is daily and medium-criticality, defaults to the Balanced tier (optimize for cost AND performance), not the most aggressive downsizing. Shows all three options with projected Δcost ($ and %) and projected Δruntime (% range) side by side so the user can trade off. The Balanced option uses an on-demand (non-spot) smaller node; the Cost option layers spot/autoscale; the Performance option keeps the proven size. Quantifies each so the user can choose.",
+      "assertions": [
+        {"text": "Recognizes the job as daily cadence with medium (cadence-derived) criticality"},
+        {"text": "Defaults to the Balanced tier rather than the most aggressive Cost tier"},
+        {"text": "Presents all three options with BOTH a cost projection and a runtime projection for each"},
+        {"text": "Explains the trade-off: cheaper options may slow the job, the Performance option protects runtime"},
+        {"text": "The recommended (Balanced) option uses an on-demand smaller node and quantifies the saving"},
+        {"text": "Provides an actionable apply artifact for the recommended option"}
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "hourly-critical-spill-guardrail",
+      "prompt": "Our business-critical job 'hourly-feature-pipeline' runs every hour and has a 30-minute SLA (tagged criticality=high, with an SLA health rule). It runs on 4x Standard_D16ds_v5 workers (same driver) and keeps spilling: worker memory p95 ~92% with ~8% swap, CPU p95 ~58%, driver memory ~50%. Recent runs are creeping up toward the SLA and one in twenty fails. What should I change? Don't make it less reliable to save a few dollars.",
+      "expected_output": "Diagnoses memory-bound spilling and scales UP to a higher-RAM memory-optimized node (E-series ~128 GB/node such as Standard_E16ds_v5). Because the job is hourly + critical, the Recommended tier is Performance (on-demand workers, no spot on a critical job; never spot the driver). Honors the guardrail that forbids reducing RAM while spill>0 across ALL tiers. Surfaces the trend (runtime creeping up, ~96% success rate) and a spill caveat. Must NOT recommend a smaller/lower-RAM node and must NOT put the recommended critical tier on spot.",
+      "assertions": [
+        {"text": "Diagnoses the workers as memory-bound / spilling (cites high memory p95 and swap)"},
+        {"text": "Recommends a higher-RAM, memory-optimized node (E-series ~128 GB/node, e.g. Standard_E16ds_v5)"},
+        {"text": "Recognizes hourly cadence + high criticality and recommends the Performance (on-demand) tier"},
+        {"text": "Never reduces RAM under spill in any tier (guardrail) and never puts the recommended critical job on spot workers"},
+        {"text": "Surfaces the multi-run trend (runtime trending up / reliability risk) and a spill caveat"},
+        {"text": "Provides a concrete apply artifact (new_cluster JSON) for the higher-RAM node"}
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "trend-based-projection",
+      "prompt": "Finance wants a number for our nightly 'big-etl' Databricks job before we change anything. It's 6x Standard_D16ds_v5 (same driver), runs daily. Here is the run history (last 20): durations have been stable around 18 min (p50) / 21 min (p90), CPU peaks ~27%, memory ~31%, no swap, and billing shows ~$12.40 per run. If we right-size it, what's the projected cost AND performance change, with the yearly impact? I need ranges, not false precision.",
+      "expected_output": "Uses the multi-run trend (stable runtime, percentiles, billed $) as the baseline rather than a single run. Projects cost as both a percentage and absolute dollars (per-run and annualized at the daily cadence) and projects runtime as a percentage RANGE, both presented as ranges with a stated basis (Amdahl-style parallelism + DBU weighting), explicitly avoiding false precision. Calls out that the absolute $ comes from system.billing and would degrade to relative DBU if billing were unavailable.",
+      "assertions": [
+        {"text": "Anchors the analysis on the multi-run trend / percentiles and billed dollars, not a single run"},
+        {"text": "Projects cost as a percentage AND in absolute dollars, including an annualized figure at the job's cadence"},
+        {"text": "Projects runtime change as a range (not a single point), with a stated modeling basis"},
+        {"text": "Presents projections as ranges and explicitly avoids false precision"},
+        {"text": "Notes that absolute $ depends on system.billing attribution and would fall back to relative DBU otherwise"}
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "thin-data-and-attribution-safety",
+      "prompt": "Two quick ones. (a) I ran an ad-hoc notebook on an all-purpose Databricks cluster for about 4 minutes; CPU ~20%, memory ~30%. Should I shrink it to save money? (b) Separately, if a cluster is an all-purpose/interactive cluster rather than a job cluster, can you still give me an exact dollar cost per run?",
+      "expected_output": "(a) Refuses to downsize on a ~4-minute sample: flags it as below the minimum sample / not representative (insufficient data) and asks for a longer, busier window before resizing — safety-first abstain. (b) Explains that for all-purpose/interactive compute the per-run cost is NOT cleanly attributable in system.billing, so it reports relative DBU with an explicit caveat instead of a precise dollar figure. Honest about limits in both cases; no unsafe downsize and no fabricated precision.",
+      "assertions": [
+        {"text": "Does NOT recommend shrinking based on the ~4-minute sample and flags it as too thin / not representative"},
+        {"text": "Asks for or recommends collecting a longer, representative window before resizing (abstain)"},
+        {"text": "Explains all-purpose/interactive cost is not attributable in system.billing and falls back to relative DBU with a caveat"},
+        {"text": "Avoids fabricating a precise dollar figure where the data does not support it"}
+      ],
+      "files": []
+    }
+  ]
+}

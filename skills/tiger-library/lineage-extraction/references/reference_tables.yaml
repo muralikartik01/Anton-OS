@@ -1,0 +1,134 @@
+# Reference Tables Configuration for Program Lineage Extraction
+# =========================================================
+# This file defines all source tables used for lineage extraction via Databricks MCP server.
+# Update table names here when migrating environments.
+
+schema_version: "1.0"
+last_updated: "2026-07-09"
+project: "Program"
+workspace_environment: "SPOT"
+
+# ============================================================================
+# AUDIT & EXECUTION TABLES
+# ============================================================================
+audit_parameters:
+  table: {audit_catalog}.{audit_schema}.audit_parameters
+  description: Pipeline-level parameters including source/target tables, load type, DQ config
+  sample_query: |
+    SELECT
+      PL_Name,
+      get_json_object(ParameterValue, '$.target_catalog_name') AS target_catalog_name, 
+      get_json_object(ParameterValue, '$.target_schema_name') AS target_schema_name, 
+      get_json_object(ParameterValue, '$.target_table_name') AS target_table_name, 
+      get_json_object(ParameterValue, '$.source_catalog_name') AS source_catalog_name, 
+      get_json_object(ParameterValue, '$.source_schema_name') AS source_schema_name, 
+      get_json_object(ParameterValue, '$.source_table_name') AS source_table_name, 
+      -- Repeat for source_catalog_name1 through source_catalog_name7
+      get_json_object(ParameterValue, '$.type_of_load') AS type_of_load, 
+      get_json_object(ParameterValue, '$.dq_dataset_name') AS dq_dataset_name,
+      get_json_object(ParameterValue, '$.dq_flag') AS dq_flag,
+      get_json_object(ParameterValue, '$.nb_path') AS nb_path,
+      get_json_object(ParameterValue, '$.query') AS query, 
+      get_json_object(ParameterValue, '$.SectorName') AS SectorName,
+      get_json_object(ParameterValue, '$.MarketName') AS MarketName,
+      get_json_object(ParameterValue, '$.table_type') AS table_type, 
+      get_json_object(ParameterValue, '$.module') AS module
+    FROM {audit_catalog}.{audit_schema}.audit_parameters
+    WHERE PL_Name = '<pipeline_name>'
+
+job_schedule:
+  table: {audit_catalog}.{audit_schema}.job_schedule
+  description: Workflow schedules and timing
+  sample_query: |
+    SELECT
+      PL_Name,
+      WorkspaceEnvironment,
+      ScheduleFrequency,
+      ScheduleDay,
+      ScheduleHour,
+      ScheduleMinute,
+      LastTrigger_Ts,
+      WorkflowName,
+      ActiveFlag
+    FROM {audit_catalog}.{audit_schema}.job_schedule
+    WHERE ActiveFlag = 'Y'
+      AND WorkspaceEnvironment = 'SPOT'
+      AND PL_Name = '<pipeline_name>'
+
+# ============================================================================
+# SYSTEM MASTER DATA
+# ============================================================================
+system_mapping:
+  table: {silver_catalog}.fdn_common_view.xtn_system_master
+  description: SourceSystemId to system name mapping
+  sample_query: |
+    SELECT
+      SourceSystemId,
+      SystemName,
+      SystemType,
+      DataClassification
+    FROM {silver_catalog}.fdn_common_view.xtn_system_master
+    WHERE SourceSystemId IN (<unique_system_ids_list>)
+
+# ============================================================================
+# LINEAGE VIEWS (Optional - For Validation)
+# ============================================================================
+pts_lineage:
+  table: {gold_catalog}.{gold_view_schema}.vw_PTSLineage
+  description: Source to target lineage for PTS pipelines (validation reference)
+  sample_query: |
+    SELECT DISTINCT
+      table_name,
+      PipelineName,
+      StatusCode,
+      ScheduleTime,
+      table_type,
+      module,
+      SectorName,
+      MarketName,
+      source_table_full_name,
+      source_table_name,
+      SourceLayer,
+      EDFTriggerType,
+      EDFSourceRefreshType
+    FROM {gold_catalog}.{gold_view_schema}.vw_PTSLineage
+    WHERE LOWER(table_name) = '<gold_table_name>'
+
+cbv_lineage:
+  table: {gold_catalog}.{finance_gold_view_schema}.vw_glopslineage
+  description: Source to target lineage for CBV pipelines (validation reference)
+
+# ============================================================================
+# UNITY CATALOG METADATA (For Schema Extraction)
+# ============================================================================
+unity_catalog_tables:
+  table: system.information_schema.tables
+  description: Unity Catalog table metadata
+  sample_query: |
+    SELECT
+      table_catalog,
+      table_schema,
+      table_name,
+      table_type
+    FROM system.information_schema.tables
+    WHERE table_catalog = '<catalog_name>'
+      AND table_schema = '<schema_name>'
+      AND table_name = '<table_name>'
+
+unity_catalog_columns:
+  table: system.information_schema.columns
+  description: Unity Catalog column metadata
+  sample_query: |
+    SELECT
+      table_catalog,
+      table_schema,
+      table_name,
+      column_name,
+      data_type,
+      is_nullable,
+      column_comment
+    FROM system.information_schema.columns
+    WHERE table_catalog = '<catalog_name>'
+      AND table_schema = '<schema_name>'
+      AND table_name = '<table_name>'
+    ORDER BY ordinal_position

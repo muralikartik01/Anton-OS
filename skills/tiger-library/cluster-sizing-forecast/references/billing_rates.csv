@@ -1,0 +1,10 @@
+sku_name,rate_usd,unit,region,environment,observed_monthly_dbus,notes
+PREMIUM_JOBS_COMPUTE,0.30,DBU,All Azure regions,ALL,8900000,Most heavily used SKU; effective 2024-09-23 no end date
+PREMIUM_JOBS_COMPUTE_(PHOTON),0.30,DBU,All Azure regions,ALL,1100000,Same DBU rate as classic; Photon processes faster so fewer DBU-hours consumed per GB
+PREMIUM_JOBS_SERVERLESS_COMPUTE_US_EAST,0.45,DBU,US East,DEV/QA,,Serverless Jobs compute US East
+PREMIUM_ALL_PURPOSE_COMPUTE,0.55,DBU,All Azure regions,ALL,2500000,Interactive / all-purpose clusters
+PREMIUM_ALL_PURPOSE_COMPUTE_(PHOTON),0.55,DBU,All Azure regions,ALL,,All-purpose Photon
+PREMIUM_ALL_PURPOSE_SERVERLESS_COMPUTE_US_EAST,0.95,DBU,US East,DEV/QA,,Serverless all-purpose US East
+PREMIUM_DATABRICKS_STORAGE_US_EAST,0.026,GB-month,US East,DEV/QA,,Primary storage region; covers Delta managed storage overhead
+PREMIUM_DATABRICKS_STORAGE_US_SOUTH_CENTRAL,0.023,GB-month,US South Central,PREPROD/PROD,,
+PREMIUM_DATABRICKS_STORAGE_US_EAST_2,0.023,GB-month,US East 2,PREPROD/PROD,,

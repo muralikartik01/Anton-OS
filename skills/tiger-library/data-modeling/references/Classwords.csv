@@ -1,0 +1,36 @@
+"Default Data Type","Default Format",Data Type Definition,Classwords
+"Boolean
+String","Boolean
+String","Only a value of 0 or 1 (1 = true, 0=false) The text of the column name should be writen in a way that matched the value. Example: HolidayFlag where the value 1 indicates true as being a Holiday.",Flag (0/1)
+"Byte
+String","Byte
+String","A-- Z, 0-- 9 (but using only a single byte)",Indicator
+Date,Date,Calendar date; a date without a specific time. Always as YYYY-MM-DD.,Date
+"Decimal
+Double/Float","Default (18,2)
+Alternate default (38,4)","Monetary Value.  For anything other than a monetary value, see Quantity, Count, and Number. ",Amount
+,,"A measure of something that is non-monetary, such as number of cases in a pallet, or weight of a product, etc. ",Quantity
+,,To capture time duration. Eg. 10.45,Duration
+,,Number used as a multiplier in a calculation.,Factor
+,,A measure of a part per one hundred. Percent is represented as a whole number with a fractional part (e.g. 33.3333).,Percent
+,,"A measure of a part with respect to the whole.  A charge per unit of something, such as freight rate. Rate is normally in reference to another column example as profit could be a rate of the actual Sales. Sometimes Rate and Percentage may signify the same directive. The Modelers will normally determine the usage by the profiling of the contents in relation to the refered column.",Rate
+,,"To capture distance, latitude/longitude, Average Counts etc",Value
+Integer,Integer/Long,System-generated number that identifies an instance in a table,Id
+,,"For use when Amount, Count, Factor, Identifier,  Percent, Rate, and Quantity are not appropriate.  Number should be all numeric (e.g. week in year number).  For ‘numbers’ with both letters and digits, use classword Value.",Number
+,,A measure of something (non-monetary). ,Quantity
+,,Sequence number within the context of an entity.  This should not be used in place of Identifier.,Sequence
+,,An enumeration of units of a group or collection to determine a total. Things that are counted.,Count
+Long,Long,Manual or System-generated number that identifies an instance in a table,Id
+String,"String(10)
+String(50)
+String(100)",Manual or System-generated number that identifies an instance in a table,Id
+,String(default 256),"Code can be represented by a single value or could consist of a set of multiple values that are concatenated and therefore considered a ""CODE""",Code
+,,The definition of something at a hight level; normally it should fit into 256 characters.,Description
+,,"Such as company name, product name, location name, person name, etc.",Name
+,,"Free form alphanumeric data. This is like free form text i.e. URL, copy of SQL statement, Email contents, etc",Text
+,,"Value should be alphanumeric where all digits or characters must be preserved (e.g. driver's license number).  Do not use for a primary key – see Identifier. By convention, also used with other classwords when the content of the field doesn’t match the classword or the content of the field is unknown.",Value
+Timestamp,YYYY-MM-DD HH:MM:SS:ff,Date and Time Combined. ,"Timestamp
+DateTime"
+Time,String(256),t,Time
+String(256),String(256),"To Capture the BusinessKey fields, eg: RouteBusinessKey, CustomerBusinessKey etc",Key
+Decimal,"Decimal(32,0)","To capture the Hash Key generated for the Id columns eg: CustomerId, RouteId etc",Id

@@ -1,0 +1,129 @@
+{
+  "over_provisioned": {
+    "direction": "down",
+    "classification": "over_provisioned",
+    "checks": {"smaller_than_current": true, "saves_dbu": true}
+  },
+  "memory_bound_swap": {
+    "direction": "up",
+    "classification": "memory_bound",
+    "checks": {"not_smaller_than_current": true, "rec_worker_family": "memory", "rec_worker_min_ram": 96}
+  },
+  "memory_pressure_low_cpu": {
+    "direction": "up",
+    "classification": "memory_bound",
+    "checks": {"not_smaller_than_current": true, "rec_worker_min_ram": 96}
+  },
+  "cpu_bound": {
+    "direction": "up",
+    "classification": "cpu_bound",
+    "checks": {"not_smaller_than_current": true, "rec_vcpu_increases": true}
+  },
+  "autoscale_capped": {
+    "direction": "up",
+    "classification": "autoscale_capped",
+    "checks": {"worker_node_unchanged": true, "rec_max_autoscale": 12}
+  },
+  "balanced": {
+    "direction": "keep",
+    "classification": "balanced",
+    "checks": {"worker_node_unchanged": true}
+  },
+  "insufficient_data": {
+    "direction": "abstain",
+    "classification": "insufficient_data",
+    "checks": {"worker_node_unchanged": true, "driver_node_unchanged": true}
+  },
+  "unavailable_system_tables": {
+    "direction": "abstain",
+    "classification": "insufficient_data",
+    "checks": {"worker_node_unchanged": true, "driver_node_unchanged": true}
+  },
+  "driver_bound": {
+    "direction": "up",
+    "classification": "driver_bound",
+    "checks": {"worker_node_unchanged": true, "driver_changed": true}
+  },
+  "over_provisioned_floor": {
+    "direction": "keep",
+    "classification": "balanced",
+    "checks": {"worker_node_unchanged": true}
+  },
+  "weekly_noncritical_downsize": {
+    "direction": "down",
+    "classification": "over_provisioned",
+    "checks": {
+      "smaller_than_current": true,
+      "saves_dbu": true,
+      "recommended_tier": "cost",
+      "num_options": 3,
+      "cadence_bucket": "weekly_or_less",
+      "criticality_tier": "low",
+      "criticality_source": "tags",
+      "rec_tier_runtime_projected": true,
+      "rec_tier_cost_dollars": true
+    }
+  },
+  "daily_balanced_default": {
+    "direction": "down",
+    "classification": "over_provisioned",
+    "checks": {
+      "smaller_than_current": true,
+      "saves_dbu": true,
+      "recommended_tier": "balanced",
+      "num_options": 3,
+      "cadence_bucket": "daily",
+      "criticality_tier": "medium",
+      "criticality_source": "cadence",
+      "rec_tier_runtime_projected": true,
+      "rec_tier_cost_dollars": true,
+      "rec_tier_on_demand": true
+    }
+  },
+  "hourly_critical_memfix": {
+    "direction": "up",
+    "classification": "memory_bound",
+    "checks": {
+      "not_smaller_than_current": true,
+      "rec_worker_family": "memory",
+      "rec_worker_min_ram": 96,
+      "recommended_tier": "performance",
+      "num_options": 3,
+      "cadence_bucket": "hourly_or_more",
+      "criticality_tier": "high",
+      "criticality_source": "tags",
+      "rec_tier_on_demand": true,
+      "rec_tier_runtime_projected": true,
+      "rec_tier_cost_dollars": true,
+      "has_caveat_substr": "Spill"
+    }
+  },
+  "allpurpose_caveat": {
+    "direction": "down",
+    "classification": "over_provisioned",
+    "checks": {
+      "smaller_than_current": true,
+      "saves_dbu": true,
+      "recommended_tier": "cost",
+      "num_options": 3,
+      "cadence_bucket": "weekly_or_less",
+      "criticality_tier": "low",
+      "has_caveat_substr": "all-purpose"
+    }
+  },
+  "weekly_critical_explicit": {
+    "direction": "keep",
+    "classification": "over_provisioned",
+    "checks": {
+      "worker_node_unchanged": true,
+      "recommended_tier": "performance",
+      "num_options": 3,
+      "cadence_bucket": "weekly_or_less",
+      "criticality_tier": "high",
+      "criticality_source": "user",
+      "rec_tier_on_demand": true,
+      "rec_tier_runtime_projected": true,
+      "rec_tier_cost_dollars": true
+    }
+  }
+}

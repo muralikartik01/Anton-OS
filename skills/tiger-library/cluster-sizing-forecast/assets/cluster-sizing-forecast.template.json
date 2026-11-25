@@ -1,0 +1,122 @@
+{
+  "abstained": false,
+  "abstain_reasons": [],
+  "workload_class": "merge_heavy",
+  "recommended_cluster": {
+    "node_type_id": "Standard_E64ds_v5",
+    "driver_node_type_id": "Standard_E64ds_v5",
+    "num_workers": null,
+    "autoscale": {
+      "min_workers": 10,
+      "max_workers": 20
+    },
+    "photon": true,
+    "spot_workers": false,
+    "spark_version": "<DBR LTS>",
+    "data_security_mode": "SINGLE_USER"
+  },
+  "recommended_tier": "recommended",
+  "options": [
+    {
+      "tier": "lean",
+      "node_type_id": "Standard_E32ds_v5",
+      "num_workers_or_autoscale": "autoscale 7-14 workers",
+      "spot_workers": false,
+      "photon": true,
+      "est_runtime_hours": {
+        "low": 4.58,
+        "high": 22.88
+      },
+      "cost": {
+        "per_run_usd": {
+          "low": 164.88,
+          "expected": 274.68,
+          "high": 823.68
+        }
+      }
+    },
+    {
+      "tier": "recommended",
+      "node_type_id": "Standard_E64ds_v5",
+      "num_workers_or_autoscale": "autoscale 10-20 workers",
+      "spot_workers": false,
+      "photon": true,
+      "est_runtime_hours": {
+        "low": 1.6,
+        "high": 8.01
+      },
+      "cost": {
+        "per_run_usd": {
+          "low": 161.28,
+          "expected": 269.14,
+          "high": 807.41
+        }
+      }
+    },
+    {
+      "tier": "conservative",
+      "node_type_id": "Standard_E64ds_v5",
+      "num_workers_or_autoscale": "autoscale 13-27 workers",
+      "spot_workers": false,
+      "photon": true,
+      "est_runtime_hours": {
+        "low": 1.19,
+        "high": 5.93
+      },
+      "cost": {
+        "per_run_usd": {
+          "low": 159.94,
+          "expected": 266.11,
+          "high": 796.99
+        }
+      }
+    }
+  ],
+  "rationale": {
+    "est_source_gb": 2050,
+    "est_shuffle_gb": 19050,
+    "read_partitions": 16400,
+    "shuffle_partitions": 152400,
+    "min_cores": 60960,
+    "mem_gb": 609600,
+    "skew_hedge": true,
+    "photon_reason": "Photon enabled for SQL/DataFrame joins, aggregations, windows or MERGE",
+    "autoscale_reason": "projected runtime exceeds ~30 minutes with variable distributed stages",
+    "node_family_reason": "shuffle/MERGE/join-heavy workload or >=6 GB/core; memory-optimized family preferred"
+  },
+  "cost_projection": {
+    "per_run_usd": {
+      "low": 161.28,
+      "expected": 269.14,
+      "high": 807.41
+    },
+    "monthly_usd": {
+      "low": 4838.4,
+      "expected": 8074.2,
+      "high": 24222.3
+    },
+    "runs_per_month": 30,
+    "analog_job_id": null,
+    "confidence": "low"
+  },
+  "assumptions": [
+    "join left_size_bytes missing; used total source size as probe side",
+    "merge partition pruning absent/false; assumed full-target scan with matched target equal to source size",
+    "skew hedge applied because key cardinality/hot-key signal indicates uneven partitions",
+    "no analog supplied; cost projection is bottom-up only with low confidence"
+  ],
+  "citations": [
+    "https://spark.apache.org/docs/latest/sql-performance-tuning.html",
+    "https://spark.apache.org/docs/latest/tuning.html",
+    "https://docs.databricks.com/aws/en/compute/cluster-config-best-practices",
+    "https://docs.databricks.com/aws/en/compute/configure",
+    "https://docs.databricks.com/aws/en/compute/photon",
+    "https://docs.databricks.com/aws/en/optimizations/aqe",
+    "https://docs.databricks.com/aws/en/delta/best-practices",
+    "https://docs.databricks.com/aws/en/tables/operations/table-details",
+    "https://docs.databricks.com/aws/en/admin/system-tables/pricing",
+    "https://docs.databricks.com/aws/en/admin/system-tables/billing",
+    "https://www.databricks.com/blog/best-practices-cost-management-databricks"
+  ],
+  "generated_by": "cluster-forecaster"
+}

@@ -1,0 +1,252 @@
+{
+  "_note": "Mock context for the retail landing zone. Dataset 'base_name' is the table name without the raw_ prefix; match on it since catalog/schema vary per run.",
+  "nodes": [
+    {
+      "id": "src-crm",
+      "label": "SourceSystem",
+      "properties": {
+        "name": "CRM",
+        "platform": "landing_zone"
+      }
+    },
+    {
+      "id": "src-erp",
+      "label": "SourceSystem",
+      "properties": {
+        "name": "ERP",
+        "platform": "landing_zone"
+      }
+    },
+    {
+      "id": "src-pos",
+      "label": "SourceSystem",
+      "properties": {
+        "name": "POS",
+        "platform": "landing_zone"
+      }
+    },
+    {
+      "id": "ds-customers",
+      "label": "Dataset",
+      "properties": {
+        "name": "raw_customers",
+        "base_name": "customers",
+        "schema": {
+          "customer_id": "string",
+          "full_name": "string",
+          "email": "string",
+          "loyalty_tier": "string",
+          "signup_date": "string",
+          "region": "string",
+          "_landed_at": "timestamp"
+        },
+        "primary_key": [
+          "customer_id"
+        ],
+        "source_system": "CRM"
+      }
+    },
+    {
+      "id": "ds-products",
+      "label": "Dataset",
+      "properties": {
+        "name": "raw_products",
+        "base_name": "products",
+        "schema": {
+          "sku": "string",
+          "product_name": "string",
+          "category": "string",
+          "unit_cost": "string",
+          "list_price": "string",
+          "is_active": "string",
+          "_landed_at": "timestamp"
+        },
+        "primary_key": [
+          "sku"
+        ],
+        "source_system": "ERP"
+      }
+    },
+    {
+      "id": "ds-orders",
+      "label": "Dataset",
+      "properties": {
+        "name": "raw_orders",
+        "base_name": "orders",
+        "schema": {
+          "order_id": "string",
+          "customer_id": "string",
+          "store_id": "string",
+          "order_timestamp": "string",
+          "order_status": "string",
+          "payment_method": "string",
+          "gross_amount": "string",
+          "discount_amount": "string",
+          "_landed_at": "timestamp"
+        },
+        "primary_key": [
+          "order_id"
+        ],
+        "source_system": "POS"
+      }
+    },
+    {
+      "id": "ds-order-items",
+      "label": "Dataset",
+      "properties": {
+        "name": "raw_order_items",
+        "base_name": "order_items",
+        "schema": {
+          "item_id": "string",
+          "order_id": "string",
+          "sku": "string",
+          "quantity": "string",
+          "unit_sold_price": "string",
+          "_landed_at": "timestamp"
+        },
+        "primary_key": [
+          "item_id"
+        ],
+        "source_system": "POS"
+      }
+    },
+    {
+      "id": "rule-order-amount-reconciles",
+      "label": "BusinessRule",
+      "properties": {
+        "name": "order_amount_reconciles_to_line_items",
+        "description": "orders.gross_amount - orders.discount_amount must equal the sum of order_items.quantity * order_items.unit_sold_price for the same order_id (after casting to DECIMAL)"
+      }
+    },
+    {
+      "id": "rule-loyalty-tier-domain",
+      "label": "BusinessRule",
+      "properties": {
+        "name": "loyalty_tier_domain",
+        "description": "customers.loyalty_tier must be one of Bronze, Silver, Gold, Platinum"
+      }
+    },
+    {
+      "id": "rule-order-status-domain",
+      "label": "BusinessRule",
+      "properties": {
+        "name": "order_status_domain",
+        "description": "orders.order_status must be one of COMPLETED, RETURNED, CANCELLED"
+      }
+    },
+    {
+      "id": "rule-payment-method-domain",
+      "label": "BusinessRule",
+      "properties": {
+        "name": "payment_method_domain",
+        "description": "orders.payment_method must be one of UPI, CARD, CASH"
+      }
+    },
+    {
+      "id": "rule-region-domain",
+      "label": "BusinessRule",
+      "properties": {
+        "name": "region_domain",
+        "description": "customers.region must be one of North, South, East, West"
+      }
+    },
+    {
+      "id": "rule-email-nullable-flagged",
+      "label": "BusinessRule",
+      "properties": {
+        "name": "email_nullable_flagged",
+        "description": "customers.email may be null but nulls must be flagged (not dropped) in Silver"
+      }
+    },
+    {
+      "id": "rule-referential-integrity",
+      "label": "BusinessRule",
+      "properties": {
+        "name": "referential_integrity",
+        "description": "orders.customer_id must exist in customers; order_items.order_id in orders; order_items.sku in products; orphans are quarantined, not silently dropped"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "type": "PRODUCES",
+      "from_id": "src-crm",
+      "to_id": "ds-customers"
+    },
+    {
+      "type": "PRODUCES",
+      "from_id": "src-erp",
+      "to_id": "ds-products"
+    },
+    {
+      "type": "PRODUCES",
+      "from_id": "src-pos",
+      "to_id": "ds-orders"
+    },
+    {
+      "type": "PRODUCES",
+      "from_id": "src-pos",
+      "to_id": "ds-order-items"
+    },
+    {
+      "type": "DEPENDS_ON",
+      "from_id": "ds-orders",
+      "to_id": "ds-customers"
+    },
+    {
+      "type": "DEPENDS_ON",
+      "from_id": "ds-order-items",
+      "to_id": "ds-orders"
+    },
+    {
+      "type": "DEPENDS_ON",
+      "from_id": "ds-order-items",
+      "to_id": "ds-products"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-order-amount-reconciles",
+      "to_id": "ds-orders"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-order-amount-reconciles",
+      "to_id": "ds-order-items"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-loyalty-tier-domain",
+      "to_id": "ds-customers"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-order-status-domain",
+      "to_id": "ds-orders"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-payment-method-domain",
+      "to_id": "ds-orders"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-region-domain",
+      "to_id": "ds-customers"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-email-nullable-flagged",
+      "to_id": "ds-customers"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-referential-integrity",
+      "to_id": "ds-orders"
+    },
+    {
+      "type": "APPLIES_TO",
+      "from_id": "rule-referential-integrity",
+      "to_id": "ds-order-items"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/pre-execution/block_secrets.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/validation/require_validation_complete.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/pre-execution/block_secrets.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/pre-execution/block_destructive_sql.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/pre-execution/check_production_target.py"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/pre-execution/check_integration_allowlist.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/pre-execution/block_destructive_sql.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/pre-execution/check_production_target.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 /home/kartikmurali/projects/db-kit/hooks/validation/require_blueprint_approval.py"
+          }
+        ]
+      }
+    ]
+  }
+}

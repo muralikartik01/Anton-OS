@@ -1,0 +1,38 @@
+{
+  "description": "Weekly, non-critical, over-provisioned job. Bias to the cheapest tier; project both cost ($) and runtime. Recommended tier = Cost.",
+  "config": {
+    "cluster_id": "0101-weekly",
+    "cluster_name": "weekly-rollup",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": 6,
+    "min_autoscale_workers": null,
+    "max_autoscale_workers": null,
+    "auto_termination_minutes": 30,
+    "cluster_source": "JOB"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": 6,
+    "worker": {"sample_minutes": 140, "cpu_p50": 18.0, "cpu_p95": 27.0, "cpu_max": 39.0, "mem_p95": 31.0, "mem_max": 38.0, "swap_max": 0.0},
+    "driver": {"sample_minutes": 140, "cpu_p50": 10.0, "cpu_p95": 22.0, "cpu_max": 30.0, "mem_p95": 28.0, "mem_max": 33.0, "swap_max": 0.0},
+    "job": {
+      "job_id": "778899",
+      "name": "weekly-rollup",
+      "tags": {"criticality": "low", "env": "prod"},
+      "cadence": {"trigger_type": "PERIODIC", "runs_per_week": 1.0}
+    },
+    "workload": {"workload_type": "simple_etl", "shuffle_partitions": 200, "is_serverless": false, "uses_pool": false},
+    "pricing": {"baseline_cost_usd": 12.40},
+    "trend": {
+      "n_runs": 20,
+      "runtime_seconds_p50": 1320,
+      "runtime_seconds_p90": 1500,
+      "runtime_seconds_stddev": 90,
+      "runtime_recency_corr": 0.05,
+      "cost_usd_p50": 12.40,
+      "cost_usd_p90": 14.10,
+      "success_rate": 1.0
+    }
+  }
+}

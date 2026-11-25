@@ -1,0 +1,149 @@
+workflow_id: legacy_to_bronze_silver_migration
+version: "1.0"
+goal: Analyze landing-zone tables in Databricks and migrate them into Bronze and Silver layers, including implementation artifacts, executed objects and validation evidence.
+description: >
+  Full 8-stage migration per spec section 11. Landing -> Bronze (typed casts,
+  ingestion metadata, quarantine) -> Silver (dedup, business rules, dimensional
+  model). Runs against a real non-production Databricks workspace through the
+  db-kit-databricks MCP server; the knowledge-graph context is a mock
+  (db-kit-context). One approval gate before anything is written.
+
+inputs:
+  - name: source
+    description: >
+      "<type>:<location>". databricks:<catalog>.<schema> (data already in landing; default when only --landing is given)
+      or postgres:<schema> (read from the Azure Database for PostgreSQL named by the DB_KIT_PG_* env vars; landing_load copies it into landing) or azuresql:<schema> (read from the Azure SQL database named by the DB_KIT_AZSQL_* env vars; a landing_load step copies it into landing).
+    required: false
+  - name: target
+    description: Target platform. Only `databricks` is supported in Phase 1; anything else stops the run.
+    required: false
+  - name: landing
+    description: "<catalog>.<schema> of the landing zone (holds the tables for a databricks source; receives the copy for an azuresql source)."
+    required: true
+  - name: jdbc_secret_scope
+    description: Databricks secret scope holding the Azure SQL JDBC user/password (azuresql or postgres source only). Keys named in the blueprint.
+    required: false
+  - name: bronze
+    description: "<catalog>.<schema> for Bronze. Default: <landing catalog>.bronze"
+    required: false
+  - name: silver
+    description: "<catalog>.<schema> for Silver. Default: <landing catalog>.silver"
+    required: false
+  - name: scope
+    description: Optional table-name filter within the landing schema. Default - all tables.
+    required: false
+  - name: dry_run
+    description: >
+      If true, stop after the documentation step. No Databricks access is needed and nothing
+      is executed; requires an azuresql or postgres source. Validation and review are not run.
+    required: false
+  - name: run_id
+    description: Generated (mig- prefix) if not supplied.
+    required: false
+
+prerequisites:
+  - db-kit-context MCP configured (mock - integrations/mcp/neo4j-context/)
+  - db-kit-postgres MCP configured with DB_KIT_PG_HOST / DATABASE / USER / PASSWORD in the environment (only when source type is postgres; integrations/mcp/postgres/)
+  - db-kit-azuresql MCP configured with DB_KIT_AZSQL_SERVER / DATABASE / USER / PASSWORD in the environment (only when source type is azuresql; integrations/mcp/azuresql/)
+  - db-kit-databricks MCP configured with DB_KIT_DBX_HOST / DB_KIT_DBX_HTTP_PATH / DB_KIT_DBX_TOKEN in the environment (integrations/mcp/databricks-sql/)
+  - Workspace tagged non-production in config/integrations.yaml
+
+steps:
+  - id: discovery
+    stage: 1
+    agent: discovery
+    skills: [project-discovery/table-shortlisting, repository-analysis/repository-analysis, source-analysis/data-profiling]
+    output: [shortlist, code_inventory, profile]
+    description: >
+      Shortlist the source tables (list_tables on the source MCP server: db-kit-databricks for a
+      databricks source, db-kit-azuresql for azuresql, db-kit-postgres for postgres), pull context from db-kit-context,
+      and profile each in-scope table via that server's execute_sql_read_only.
+  - id: assessment
+    stage: 2
+    agent: migration-architect
+    skills: [migration-assessment/complexity-assessment]
+    input: [shortlist, profile]
+    output: artifacts/migration-plans/<project-id>/<run-id>/assessment.md
+    description: Complexity, dependency risk, ambiguous logic, volume, platform compatibility, migration order.
+  - id: migration_blueprint
+    stage: 3
+    agent: migration-architect
+    skills: [medallion-design/medallion-design, source-to-target-mapping/source-to-target-mapping]
+    input: [assessment, profile]
+    output: artifacts/migration-plans/<project-id>/<run-id>/{blueprint.md,source-to-target-mapping.yaml}
+    description: >
+      Bronze and Silver design plus the mapping, including the pre-approval
+      validation pass. No ERROR-severity finding may remain when presented.
+  - id: artifact_generation
+    stage: 5
+    agent: transformation
+    skills: [sql-migration/sql-migration, landing-load/landing-load]
+    input: artifacts/migration-plans/<project-id>/<run-id>/source-to-target-mapping.yaml
+    output: artifacts/generated-code/<project-id>/<run-id>/{bronze,silver,config}/
+    description: >
+      Notebooks and SQL generated from the approved mapping; generates but never executes.
+      For an azuresql source this includes the landing/ statements (landing-load skill) and the
+      T-SQL to Spark type mapping from the blueprint.
+  - id: documentation
+    stage: 5
+    agent: transformation
+    skills: [code-documentation/notebook-documentation]
+    input: artifacts/generated-code/<project-id>/<run-id>/
+    output: artifacts/generated-code/<project-id>/<run-id>/docs/
+    description: One transformation document per generated notebook; documents only what the code shows.
+  - id: validation
+    stage: 6
+    agent: validation
+    skills: [data-quality/quality-rule-generation, data-quality/quality-check-execution, reconciliation/reconciliation]
+    input: artifacts/generated-code/<project-id>/<run-id>/
+    output: artifacts/validation/<project-id>/<run-id>/{test-plan.md,results.md,evidence/}
+    description: >
+      Opens by materializing the approved SQL with execute_statement (for an azuresql source:
+      landing first; then schemas, Bronze, Silver), then runs the checks against what was
+      created. For an azuresql source, reconciliation compares source (db-kit-azuresql) with
+      landing row counts and column checks.
+  - id: review
+    stage: 7
+    agent: review
+    skills: [migration-review/migration-review]
+    input: [artifacts/generated-code/<project-id>/<run-id>/, artifacts/validation/<project-id>/<run-id>/results.md]
+    output: artifacts/reports/<project-id>/<run-id>/migration-report.md
+
+# Stage 4 (approval checkpoint) is a gate between migration_blueprint and
+# artifact_generation, not a step. Stage 8 (human release decision) is a closing
+# note: no production write exists to authorize (production_writes_enabled: false).
+
+context_requirements:
+  - db-kit-context MCP (read - list_schema, query_context, get_entity, get_lineage; write - annotate_entity)
+  - db-kit-azuresql MCP (azuresql source only; read - list_tables, describe_table, execute_sql_read_only)
+  - db-kit-databricks MCP (read - list_tables, describe_table, execute_sql_read_only; write - execute_statement, Validation Agent only)
+
+tool_requirements:
+  - MCP db-kit-context
+  - MCP db-kit-databricks
+
+checkpoints:
+  - After every step, update observability/run-records/<run-id>.yaml (step status, output_refs, resolved landing/bronze/silver names) before moving on.
+
+approval_gates:
+  - before: artifact_generation
+    stage_name: migration_blueprint
+    mechanism: hooks/validation/require_blueprint_approval.py
+    description: >
+      A human approves the blueprint and mapping. The approval is recorded in
+      the run record `approvals` list with stage `migration_blueprint`; without it
+      the hook blocks every execute_statement call for that run_id.
+
+validation_requirements:
+  - results.md must carry an explicit pass/fail/blocked status for every rule in test-plan.md -- enforced by hooks/validation/require_validation_complete.py before the report is written.
+
+outputs:
+  - artifacts/migration-plans/<project-id>/<run-id>/{assessment.md,blueprint.md,source-to-target-mapping.yaml}
+  - artifacts/generated-code/<project-id>/<run-id>/{landing,bronze,silver,config,docs}/ (landing/ only for an azuresql or postgres source)
+  - artifacts/validation/<project-id>/<run-id>/{profile.csv,quality-rules.csv}
+  - artifacts/validation/<project-id>/<run-id>/{test-plan.md,results.md,evidence/}
+  - artifacts/reports/<project-id>/<run-id>/migration-report.md
+
+failure_and_recovery:
+  - Any step that cannot complete (MCP unavailable, warehouse unreachable, table not found, statement failed) sets the run record state to `blocked` with the reason recorded, rather than guessing or skipping silently.
+  - A blocked or interrupted run resumes via `/db-kit-resume <run-id>`.

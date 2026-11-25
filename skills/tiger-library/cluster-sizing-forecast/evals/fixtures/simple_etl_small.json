@@ -1,0 +1,25 @@
+{
+  "inputs": {
+    "use_case": "simple",
+    "load_strategy": "append",
+    "sources": [
+      {
+        "fqn": "uc.tiny",
+        "size_bytes": 536870912,
+        "num_files": 8,
+        "row_count": 1000000,
+        "partition_columns": []
+      }
+    ],
+    "schedule": {
+      "cadence": "daily",
+      "runs_per_month": 30,
+      "criticality": "low"
+    },
+    "pricing": {
+      "jobs_dbu_usd": 0.3,
+      "all_purpose_dbu_usd": 0.55,
+      "photon_dbu_mult": 2.0
+    }
+  }
+}

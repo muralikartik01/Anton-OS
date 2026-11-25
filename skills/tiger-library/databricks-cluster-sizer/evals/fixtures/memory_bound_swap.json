@@ -1,0 +1,20 @@
+{
+  "description": "Workers spilling: mem p95 92% and swap present. Must scale up to more RAM, never down.",
+  "config": {
+    "cluster_id": "0101-mem",
+    "cluster_name": "join-heavy-etl",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": 4,
+    "min_autoscale_workers": null,
+    "max_autoscale_workers": null,
+    "auto_termination_minutes": 20,
+    "cluster_source": "JOB"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": 4,
+    "worker": {"sample_minutes": 180, "cpu_p50": 40.0, "cpu_p95": 58.0, "cpu_max": 71.0, "mem_p95": 92.0, "mem_max": 98.0, "swap_max": 8.0},
+    "driver": {"sample_minutes": 180, "cpu_p50": 20.0, "cpu_p95": 35.0, "cpu_max": 44.0, "mem_p95": 50.0, "mem_max": 60.0, "swap_max": 0.0}
+  }
+}

@@ -1,0 +1,69 @@
+workflow_id: data_quality_check
+version: "1.0"
+description: >
+  Validate and quality-check an in-scope set of datasets with no migration
+  involved. The simplest Phase 1 workflow — proves discovery, profiling,
+  rule generation, and deterministic check execution end-to-end before (or
+  independent of) the full legacy_to_bronze_silver_migration workflow.
+
+inputs:
+  - name: scope
+    description: Explicit table names, or a source-system/schema filter.
+    required: true
+  - name: run_id
+    description: Generated if not supplied.
+    required: false
+
+prerequisites:
+  - db-kit-context MCP server configured (real or mock — see integrations/mcp/neo4j-context/)
+  - Source connection declared in config/project.yaml / config/integrations.yaml
+
+steps:
+  - id: scope_resolution
+    agent: discovery
+    skill: project-discovery/table-shortlisting
+    output: shortlist
+  - id: profiling
+    agent: discovery
+    skill: source-analysis/data-profiling
+    input: shortlist
+    output: profile
+  - id: rule_generation
+    agent: validation
+    skill: data-quality/quality-rule-generation
+    input: [shortlist, profile]
+    output: artifacts/validation/<project-id>/<run-id>/test-plan.md
+  - id: check_execution
+    agent: validation
+    skill: data-quality/quality-check-execution
+    input: test-plan.md
+    output: artifacts/validation/<project-id>/<run-id>/results.md
+  - id: report
+    agent: review
+    output: artifacts/reports/<project-id>/<run-id>/quality-report.md
+
+context_requirements:
+  - db-kit-context MCP (read: list_schema, query_context, get_entity; write: annotate_entity for discovered gaps)
+  - Source connection (read-only SQL for profiling and check execution)
+
+tool_requirements:
+  - MCP db-kit-context
+  - Read-only SQL access to the declared source connection
+
+checkpoints:
+  - After every step, the run record (observability/run-records/<run-id>.yaml) is updated with step status and artifact references before moving on.
+
+approval_gates:
+  - None required. Every step is read-only against a non-production connection, so no Stage-4-equivalent blueprint approval applies — this workflow does not write or migrate anything. hooks/pre-execution/ still apply uniformly (destructive-SQL blocklist, production-write gate) as a backstop, not because this workflow is expected to trip them.
+
+validation_requirements:
+  - results.md must carry an explicit pass/fail/blocked status for every rule in test-plan.md — enforced by hooks/validation/ before the report step runs.
+
+outputs:
+  - artifacts/validation/<project-id>/<run-id>/test-plan.md
+  - artifacts/validation/<project-id>/<run-id>/results.md
+  - artifacts/reports/<project-id>/<run-id>/quality-report.md
+
+failure_and_recovery:
+  - Any step that cannot complete (MCP unavailable, connection unreachable, requested table not found) sets the run record state to `blocked` with the reason recorded, rather than guessing or skipping silently.
+  - A blocked or interrupted run resumes via the `/db-kit-resume <run-id>` command, which reads the run record and continues from the last completed step.

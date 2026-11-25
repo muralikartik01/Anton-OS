@@ -1,0 +1,20 @@
+Product Master Reference Data Requirements
+
+Version History
+VERSION	APPROVED BY	REVISION DATE	DESCRIPTION OF CHANGE	AUTHOR
+V 1.0	Sample Owner	2026-05-01	Initial draft	Sample Analyst
+
+Objective:
+Establish a reusable reference dataset for product identifiers, product names, and core classification fields used across reporting workflows.
+
+Scope:
+This sample narrative is intentionally generic. It demonstrates how a DRD narrative can describe the business purpose, scope boundaries, and attribute expectations without assuming a specific project, market, or product family.
+
+Business Process:
+The source system publishes product master records. The target workflow standardizes core attributes, validates identifiers, and exposes a curated reference table for downstream reporting and planning use cases.
+
+Example Data Attributes
+Attribute	Source System
+ProductId	ERP Product Master
+ProductName	ERP Product Master
+ProductCategory	ERP Product Master

@@ -1,0 +1,20 @@
+# Parameters for the generated notebooks (widget values). No secrets.
+run_id: mig-example-project-20261125T062515Z
+project_id: example-project
+landing: {catalog: retail_demo, schema: landing}
+bronze:  {catalog: retail_demo, schema: bronze}
+silver:  {catalog: retail_demo, schema: silver}
+jdbc:
+  secret_scope: db-kit-demo        # PLACEHOLDER - replace before a real run
+  user_key: jdbc-user              # PLACEHOLDER
+  password_key: jdbc-password      # PLACEHOLDER
+  host_env: DB_KIT_PG_HOST         # resolve at run time; value never stored
+  database_env: DB_KIT_PG_DATABASE
+execution_order:
+  - landing/register_sources.sql
+  - landing/load_landing.sql
+  - bronze/customers, bronze/products, bronze/orders, bronze/order_items
+  - silver/quarantine_rows
+  - silver/dim_customer, silver/dim_product
+  - silver/fact_orders
+  - silver/fact_order_lines

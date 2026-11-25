@@ -1,0 +1,992 @@
+run_id: mig-example-project-20261125T062515Z
+project_id: example-project
+source:
+  type: postgres
+  location: raw_dump
+names:
+  landing: retail_demo.landing
+  bronze: retail_demo.bronze
+  silver: retail_demo.silver
+jdbc:
+  secret_scope: db-kit-demo
+  user_key: jdbc-user
+  password_key: jdbc-password
+  placeholders: true
+  note: PLACEHOLDERS (dry run) - replace with the real scope/keys before a real run. Host/database come from DB_KIT_PG_HOST / DB_KIT_PG_DATABASE
+    at run time; no values recorded.
+load_order:
+- 'landing: raw_customers, raw_products, raw_orders, raw_order_items'
+- 'bronze: customers, products, orders, order_items'
+- 'silver: dim_customer, dim_product, fact_orders, fact_order_lines, quarantine_rows'
+landing:
+- source_schema: raw_dump
+  source_table: raw_customers
+  landing_table: retail_demo.landing.raw_customers
+  columns:
+  - source_column: customer_id
+    postgres_type: text
+    spark_type: STRING
+    nullable: false
+  - source_column: full_name
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: email
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: loyalty_tier
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: signup_date
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: region
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: _landed_at
+    postgres_type: timestamptz
+    spark_type: TIMESTAMP
+    nullable: false
+  - source_column: null
+    landing_column: _landed_at (landing load time, current_timestamp())
+    note: source _landed_at is overwritten in landing; see risk R5
+- source_schema: raw_dump
+  source_table: raw_products
+  landing_table: retail_demo.landing.raw_products
+  columns:
+  - source_column: sku
+    postgres_type: text
+    spark_type: STRING
+    nullable: false
+  - source_column: product_name
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: category
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: unit_cost
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: list_price
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: is_active
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: _landed_at
+    postgres_type: timestamptz
+    spark_type: TIMESTAMP
+    nullable: false
+  - source_column: null
+    landing_column: _landed_at (landing load time, current_timestamp())
+    note: source _landed_at is overwritten in landing; see risk R5
+- source_schema: raw_dump
+  source_table: raw_orders
+  landing_table: retail_demo.landing.raw_orders
+  columns:
+  - source_column: order_id
+    postgres_type: text
+    spark_type: STRING
+    nullable: false
+  - source_column: customer_id
+    postgres_type: text
+    spark_type: STRING
+    nullable: false
+  - source_column: store_id
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: order_timestamp
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: order_status
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: payment_method
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: gross_amount
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: discount_amount
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: _landed_at
+    postgres_type: timestamptz
+    spark_type: TIMESTAMP
+    nullable: false
+  - source_column: null
+    landing_column: _landed_at (landing load time, current_timestamp())
+    note: source _landed_at is overwritten in landing; see risk R5
+- source_schema: raw_dump
+  source_table: raw_order_items
+  landing_table: retail_demo.landing.raw_order_items
+  columns:
+  - source_column: item_id
+    postgres_type: text
+    spark_type: STRING
+    nullable: false
+  - source_column: order_id
+    postgres_type: text
+    spark_type: STRING
+    nullable: false
+  - source_column: sku
+    postgres_type: text
+    spark_type: STRING
+    nullable: false
+  - source_column: quantity
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: unit_sold_price
+    postgres_type: text
+    spark_type: STRING
+    nullable: true
+  - source_column: _landed_at
+    postgres_type: timestamptz
+    spark_type: TIMESTAMP
+    nullable: false
+  - source_column: null
+    landing_column: _landed_at (landing load time, current_timestamp())
+    note: source _landed_at is overwritten in landing; see risk R5
+tables:
+  retail_demo.bronze.customers:
+    primary_key:
+    - customer_id
+    - _landed_at
+    merge_key:
+    - customer_id
+    - _landed_at
+    foreign_keys: []
+    load_strategy: append-only; insert landing rows whose (key,_landed_at) are not yet present (idempotent)
+  retail_demo.bronze.products:
+    primary_key:
+    - sku
+    - _landed_at
+    merge_key:
+    - sku
+    - _landed_at
+    foreign_keys: []
+    load_strategy: append-only, same as customers
+  retail_demo.bronze.orders:
+    primary_key:
+    - order_id
+    - _landed_at
+    merge_key:
+    - order_id
+    - _landed_at
+    foreign_keys: []
+    load_strategy: append-only, same as customers
+  retail_demo.bronze.order_items:
+    primary_key:
+    - item_id
+    - _landed_at
+    merge_key:
+    - item_id
+    - _landed_at
+    foreign_keys: []
+    load_strategy: append-only, same as customers
+  retail_demo.silver.dim_customer:
+    primary_key:
+    - customer_id
+    merge_key:
+    - customer_id
+    foreign_keys: []
+    load_strategy: MERGE from latest Bronze row per customer_id (ROW_NUMBER over _landed_at desc); full-reload source, no incremental watermark
+      in source
+  retail_demo.silver.dim_product:
+    primary_key:
+    - sku
+    merge_key:
+    - sku
+    foreign_keys: []
+    load_strategy: MERGE, same as dim_customer
+  retail_demo.silver.fact_orders:
+    primary_key:
+    - order_id
+    merge_key:
+    - order_id
+    foreign_keys:
+    - column: customer_id
+      references: retail_demo.silver.dim_customer.customer_id
+    load_strategy: MERGE after dim_customer; orphan customer_id -> quarantine
+  retail_demo.silver.fact_order_lines:
+    primary_key:
+    - item_id
+    merge_key:
+    - item_id
+    foreign_keys:
+    - column: order_id
+      references: retail_demo.silver.fact_orders.order_id
+    - column: sku
+      references: retail_demo.silver.dim_product.sku
+    load_strategy: MERGE after dim_product and fact_orders; orphans -> quarantine
+  retail_demo.silver.quarantine_rows:
+    primary_key:
+    - source_table
+    - record_key
+    - reason
+    - _run_id
+    merge_key:
+    - source_table
+    - record_key
+    - reason
+    - _run_id
+    foreign_keys: []
+    load_strategy: MERGE on key (idempotent per run_id)
+columns:
+- target_table: retail_demo.bronze.customers
+  target_column: customer_id
+  source_table: retail_demo.landing.raw_customers
+  source_column: customer_id
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.customers
+  target_column: full_name
+  source_table: retail_demo.landing.raw_customers
+  source_column: full_name
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.customers
+  target_column: email
+  source_table: retail_demo.landing.raw_customers
+  source_column: email
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.customers
+  target_column: loyalty_tier
+  source_table: retail_demo.landing.raw_customers
+  source_column: loyalty_tier
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.customers
+  target_column: signup_date
+  source_table: retail_demo.landing.raw_customers
+  source_column: signup_date
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.customers
+  target_column: region
+  source_table: retail_demo.landing.raw_customers
+  source_column: region
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.customers
+  target_column: _landed_at
+  source_table: retail_demo.landing.raw_customers
+  source_column: _landed_at
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.customers
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.customers
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.landing.raw_customers'
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: sku
+  source_table: retail_demo.landing.raw_products
+  source_column: sku
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: product_name
+  source_table: retail_demo.landing.raw_products
+  source_column: product_name
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: category
+  source_table: retail_demo.landing.raw_products
+  source_column: category
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: unit_cost
+  source_table: retail_demo.landing.raw_products
+  source_column: unit_cost
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: list_price
+  source_table: retail_demo.landing.raw_products
+  source_column: list_price
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: is_active
+  source_table: retail_demo.landing.raw_products
+  source_column: is_active
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: _landed_at
+  source_table: retail_demo.landing.raw_products
+  source_column: _landed_at
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.products
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.landing.raw_products'
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: order_id
+  source_table: retail_demo.landing.raw_orders
+  source_column: order_id
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: customer_id
+  source_table: retail_demo.landing.raw_orders
+  source_column: customer_id
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: store_id
+  source_table: retail_demo.landing.raw_orders
+  source_column: store_id
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: order_timestamp
+  source_table: retail_demo.landing.raw_orders
+  source_column: order_timestamp
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: order_status
+  source_table: retail_demo.landing.raw_orders
+  source_column: order_status
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: payment_method
+  source_table: retail_demo.landing.raw_orders
+  source_column: payment_method
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: gross_amount
+  source_table: retail_demo.landing.raw_orders
+  source_column: gross_amount
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: discount_amount
+  source_table: retail_demo.landing.raw_orders
+  source_column: discount_amount
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: _landed_at
+  source_table: retail_demo.landing.raw_orders
+  source_column: _landed_at
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.orders
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.landing.raw_orders'
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.order_items
+  target_column: item_id
+  source_table: retail_demo.landing.raw_order_items
+  source_column: item_id
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.order_items
+  target_column: order_id
+  source_table: retail_demo.landing.raw_order_items
+  source_column: order_id
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.order_items
+  target_column: sku
+  source_table: retail_demo.landing.raw_order_items
+  source_column: sku
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.order_items
+  target_column: quantity
+  source_table: retail_demo.landing.raw_order_items
+  source_column: quantity
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.order_items
+  target_column: unit_sold_price
+  source_table: retail_demo.landing.raw_order_items
+  source_column: unit_sold_price
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.bronze.order_items
+  target_column: _landed_at
+  source_table: retail_demo.landing.raw_order_items
+  source_column: _landed_at
+  classification: direct
+  transformation: pass-through, no cast (Bronze preserves source schema)
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.order_items
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.bronze.order_items
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.landing.raw_order_items'
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.dim_customer
+  target_column: customer_id
+  source_table: retail_demo.bronze.customers
+  source_column: customer_id
+  classification: direct
+  transformation: pass-through from latest Bronze row per key
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.dim_customer
+  target_column: customer_name
+  source_table: retail_demo.bronze.customers
+  source_column: full_name
+  classification: transformed
+  transformation: TRIM(full_name); renamed
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.dim_customer
+  target_column: email
+  source_table: retail_demo.bronze.customers
+  source_column: email
+  classification: transformed
+  transformation: NULLIF(LOWER(TRIM(email)),''); NULL kept, not dropped
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+  business_rule: rule-email-nullable-flagged
+- target_table: retail_demo.silver.dim_customer
+  target_column: is_email_missing
+  source_table: retail_demo.bronze.customers
+  source_column: email
+  classification: derived
+  transformation: email IS NULL OR TRIM(email) = '' (flag, row kept)
+  type_mapping: BOOLEAN
+  nullable: false
+  status: resolved
+  business_rule: rule-email-nullable-flagged
+- target_table: retail_demo.silver.dim_customer
+  target_column: loyalty_tier
+  source_table: retail_demo.bronze.customers
+  source_column: loyalty_tier
+  classification: transformed
+  transformation: TRIM; must be in (Bronze,Silver,Gold,Platinum) else row quarantined
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+  business_rule: rule-loyalty-tier-domain
+- target_table: retail_demo.silver.dim_customer
+  target_column: signup_date
+  source_table: retail_demo.bronze.customers
+  source_column: signup_date
+  classification: transformed
+  transformation: TRY_CAST(signup_date AS DATE); cast failure -> quarantine
+  type_mapping: DATE
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.dim_customer
+  target_column: region
+  source_table: retail_demo.bronze.customers
+  source_column: region
+  classification: transformed
+  transformation: TRIM; must be in (North,South,East,West) else row quarantined
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+  business_rule: rule-region-domain
+- target_table: retail_demo.silver.dim_customer
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.dim_customer
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.bronze.customers'
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.dim_product
+  target_column: sku
+  source_table: retail_demo.bronze.products
+  source_column: sku
+  classification: direct
+  transformation: pass-through from latest Bronze row per key
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.dim_product
+  target_column: product_name
+  source_table: retail_demo.bronze.products
+  source_column: product_name
+  classification: transformed
+  transformation: TRIM
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.dim_product
+  target_column: category
+  source_table: retail_demo.bronze.products
+  source_column: category
+  classification: transformed
+  transformation: TRIM
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.dim_product
+  target_column: unit_cost
+  source_table: retail_demo.bronze.products
+  source_column: unit_cost
+  classification: transformed
+  transformation: TRY_CAST(unit_cost AS DECIMAL(18,2)); failure -> quarantine
+  type_mapping: DECIMAL(18,2)
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.dim_product
+  target_column: list_price
+  source_table: retail_demo.bronze.products
+  source_column: list_price
+  classification: transformed
+  transformation: TRY_CAST(list_price AS DECIMAL(18,2)); failure -> quarantine
+  type_mapping: DECIMAL(18,2)
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.dim_product
+  target_column: is_active
+  source_table: retail_demo.bronze.products
+  source_column: is_active
+  classification: transformed
+  transformation: TRY_CAST(LOWER(TRIM(is_active)) AS BOOLEAN); failure -> quarantine
+  type_mapping: BOOLEAN
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.dim_product
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.dim_product
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.bronze.products'
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.fact_orders
+  target_column: order_id
+  source_table: retail_demo.bronze.orders
+  source_column: order_id
+  classification: direct
+  transformation: pass-through from latest Bronze row per key
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.fact_orders
+  target_column: customer_id
+  source_table: retail_demo.bronze.orders
+  source_column: customer_id
+  classification: direct
+  transformation: pass-through from latest Bronze row per key
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+  business_rule: rule-referential-integrity
+- target_table: retail_demo.silver.fact_orders
+  target_column: store_id
+  source_table: retail_demo.bronze.orders
+  source_column: store_id
+  classification: direct
+  transformation: pass-through from latest Bronze row per key
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.fact_orders
+  target_column: order_timestamp
+  source_table: retail_demo.bronze.orders
+  source_column: order_timestamp
+  classification: transformed
+  transformation: TRY_CAST(order_timestamp AS TIMESTAMP_NTZ); source strings carry no zone, none is assumed (OQ3); failure -> quarantine
+  type_mapping: TIMESTAMP_NTZ
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.fact_orders
+  target_column: order_status
+  source_table: retail_demo.bronze.orders
+  source_column: order_status
+  classification: transformed
+  transformation: TRIM; must be in (COMPLETED,RETURNED,CANCELLED) else quarantine
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+  business_rule: rule-order-status-domain
+- target_table: retail_demo.silver.fact_orders
+  target_column: payment_method
+  source_table: retail_demo.bronze.orders
+  source_column: payment_method
+  classification: transformed
+  transformation: TRIM; must be in (UPI,CARD,CASH) else quarantine
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+  business_rule: rule-payment-method-domain
+- target_table: retail_demo.silver.fact_orders
+  target_column: gross_amount
+  source_table: retail_demo.bronze.orders
+  source_column: gross_amount
+  classification: transformed
+  transformation: TRY_CAST(gross_amount AS DECIMAL(18,2)); failure -> quarantine
+  type_mapping: DECIMAL(18,2)
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.fact_orders
+  target_column: discount_amount
+  source_table: retail_demo.bronze.orders
+  source_column: discount_amount
+  classification: transformed
+  transformation: TRY_CAST(discount_amount AS DECIMAL(18,2)); failure -> quarantine
+  type_mapping: DECIMAL(18,2)
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.fact_orders
+  target_column: items_total
+  source_table: retail_demo.bronze.order_items
+  source_column: quantity, unit_sold_price
+  classification: derived
+  transformation: SUM(CAST(quantity AS INT) * CAST(unit_sold_price AS DECIMAL(18,2))) grouped by order_id (join order_items on order_id)
+  type_mapping: DECIMAL(18,2)
+  nullable: true
+  status: resolved
+  business_rule: rule-order-amount-reconciles
+- target_table: retail_demo.silver.fact_orders
+  target_column: is_amount_reconciled
+  source_table: retail_demo.bronze.orders
+  source_column: gross_amount, discount_amount
+  classification: derived
+  transformation: gross_amount - discount_amount = items_total, exactly as written in rule-order-amount-reconciles; FLAGGED, row kept. Rule interpretation
+    is open (OQ1)
+  type_mapping: BOOLEAN
+  nullable: true
+  status: unresolved
+  business_rule: rule-order-amount-reconciles
+- target_table: retail_demo.silver.fact_orders
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.fact_orders
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.bronze.orders'
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.fact_order_lines
+  target_column: item_id
+  source_table: retail_demo.bronze.order_items
+  source_column: item_id
+  classification: direct
+  transformation: pass-through from latest Bronze row per key
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.fact_order_lines
+  target_column: order_id
+  source_table: retail_demo.bronze.order_items
+  source_column: order_id
+  classification: direct
+  transformation: pass-through from latest Bronze row per key
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+  business_rule: rule-referential-integrity
+- target_table: retail_demo.silver.fact_order_lines
+  target_column: sku
+  source_table: retail_demo.bronze.order_items
+  source_column: sku
+  classification: direct
+  transformation: pass-through from latest Bronze row per key
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+  business_rule: rule-referential-integrity
+- target_table: retail_demo.silver.fact_order_lines
+  target_column: quantity
+  source_table: retail_demo.bronze.order_items
+  source_column: quantity
+  classification: transformed
+  transformation: TRY_CAST(quantity AS INT); failure -> quarantine
+  type_mapping: INT
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.fact_order_lines
+  target_column: unit_sold_price
+  source_table: retail_demo.bronze.order_items
+  source_column: unit_sold_price
+  classification: transformed
+  transformation: TRY_CAST(unit_sold_price AS DECIMAL(18,2)); failure -> quarantine
+  type_mapping: DECIMAL(18,2)
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.fact_order_lines
+  target_column: line_amount
+  source_table: retail_demo.bronze.order_items
+  source_column: quantity, unit_sold_price
+  classification: derived
+  transformation: CAST(quantity AS INT) * CAST(unit_sold_price AS DECIMAL(18,2))
+  type_mapping: DECIMAL(18,2)
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.fact_order_lines
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.fact_order_lines
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.bronze.order_items'
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.quarantine_rows
+  target_column: source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: Bronze table the rejected row came from
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.quarantine_rows
+  target_column: record_key
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: business key of the rejected row
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.quarantine_rows
+  target_column: reason
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: cast_failure:<col> | domain_violation:<rule id> | orphan_fk:<col>
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.quarantine_rows
+  target_column: row_json
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: TO_JSON(STRUCT of Bronze source columns)
+  type_mapping: STRING
+  nullable: true
+  status: resolved
+- target_table: retail_demo.silver.quarantine_rows
+  target_column: _run_id
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: run_id parameter
+  type_mapping: STRING
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.quarantine_rows
+  target_column: _ingested_at
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: current_timestamp() of the run that wrote the row
+  type_mapping: TIMESTAMP
+  nullable: false
+  status: resolved
+- target_table: retail_demo.silver.quarantine_rows
+  target_column: _source_table
+  source_table: null
+  source_column: null
+  classification: no_mapping
+  transformation: literal 'retail_demo.bronze.<various>'
+  type_mapping: STRING
+  nullable: false
+  status: resolved

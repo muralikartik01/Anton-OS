@@ -1,0 +1,86 @@
+{
+  "skill_name": "cluster-sizing-forecast",
+  "config": {
+    "models": [
+      "claude-sonnet-4.6"
+    ],
+    "executor_model": "claude-sonnet-4.6",
+    "analyzer_model": "claude-sonnet-4.6",
+    "runs_per_configuration": 1,
+    "notes": "Agent evals are descriptive; the authoritative correctness gate is the offline deterministic suite (python evals/run_evals.py)."
+  },
+  "evals": [
+    {
+      "id": 0,
+      "name": "deliveryline-sa-golden-forecast",
+      "prompt": "Forecast the first-run cluster for Deliveryline SA: 1.85 TB daily high-criticality Delta upsert with six merge keys, eight joins, partitioned source, no merge partition pruning, analog and pricing supplied.",
+      "expected_output": "Classifies merge_heavy, recommends an E-series memory-optimized multi-worker Photon job cluster, emits lean/recommended/conservative options and a bounded non-trivial cost projection.",
+      "assertions": [
+        {
+          "text": "merge_heavy and not abstained"
+        },
+        {
+          "text": "recommended node is memory optimized E-series and Photon is enabled"
+        },
+        {
+          "text": "three tiers and cost band are present"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "small-append-simple-etl",
+      "prompt": "Forecast a tiny append-only ETL under 1 GB with no merge and no joins.",
+      "expected_output": "Classifies simple_etl and recommends the smallest single-node general-purpose D/DS cluster with low cost and no Photon.",
+      "assertions": [
+        {
+          "text": "simple_etl classification"
+        },
+        {
+          "text": "single-node smallest general node"
+        },
+        {
+          "text": "low cost"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "join-heavy-sort-merge",
+      "prompt": "Forecast two large facts joined by sort-merge joins with no merge.",
+      "expected_output": "Classifies join_heavy, enables Photon, uses a memory/general multi-worker node and large shuffle partitions.",
+      "assertions": [
+        {
+          "text": "join_heavy classification"
+        },
+        {
+          "text": "large shuffle partitions"
+        },
+        {
+          "text": "Photon true"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "abstain-unreadable-sources",
+      "prompt": "Forecast a job where the source table reports size_bytes=0.",
+      "expected_output": "Abstains with reasons and emits no guessed recommended_cluster.",
+      "assertions": [
+        {
+          "text": "abstained true"
+        },
+        {
+          "text": "non-empty abstain reasons"
+        },
+        {
+          "text": "recommended_cluster null"
+        }
+      ],
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "description": "Healthy utilization in the target band. Keep current size.",
+  "config": {
+    "cluster_id": "0101-bal",
+    "cluster_name": "feature-build",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": 4,
+    "min_autoscale_workers": null,
+    "max_autoscale_workers": null,
+    "auto_termination_minutes": 20,
+    "cluster_source": "JOB"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": 4,
+    "worker": {"sample_minutes": 150, "cpu_p50": 52.0, "cpu_p95": 63.0, "cpu_max": 74.0, "mem_p95": 62.0, "mem_max": 70.0, "swap_max": 0.0},
+    "driver": {"sample_minutes": 150, "cpu_p50": 30.0, "cpu_p95": 45.0, "cpu_max": 55.0, "mem_p95": 48.0, "mem_max": 55.0, "swap_max": 0.0}
+  }
+}

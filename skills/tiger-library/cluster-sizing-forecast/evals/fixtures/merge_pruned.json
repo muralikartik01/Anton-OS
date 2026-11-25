@@ -1,0 +1,94 @@
+{
+  "inputs": {
+    "load_strategy": "upsert",
+    "sources": [
+      {
+        "fqn": "uc.deliveryline_delta",
+        "size_bytes": 2034096511385,
+        "num_files": 42000,
+        "row_count": 2500000000,
+        "partition_columns": [
+          "SystemId",
+          "ReportingUnitId",
+          "RecordCreatedDate"
+        ],
+        "role": "fact"
+      }
+    ],
+    "joins": [
+      {
+        "type": "inner",
+        "right_role": "dim",
+        "right_size_bytes": 5242880,
+        "broadcastable": true
+      },
+      {
+        "type": "left",
+        "right_role": "dim",
+        "right_size_bytes": 83886080
+      },
+      {
+        "type": "left",
+        "right_role": "dim",
+        "right_size_bytes": 786432000
+      },
+      {
+        "type": "inner",
+        "right_role": "fact",
+        "right_size_bytes": 3221225472
+      },
+      {
+        "type": "left",
+        "right_role": "fact",
+        "right_size_bytes": 8589934592
+      },
+      {
+        "type": "inner",
+        "right_role": "dim",
+        "right_size_bytes": 15728640
+      },
+      {
+        "type": "left",
+        "right_role": "dim",
+        "right_size_bytes": 1073741824
+      },
+      {
+        "type": "inner",
+        "right_role": "fact",
+        "right_size_bytes": 5368709120
+      }
+    ],
+    "merge": {
+      "keys": [
+        "SystemId",
+        "ReportingUnitId",
+        "CustomerId",
+        "ProductId",
+        "RouteId",
+        "RecordCreatedDate"
+      ],
+      "partition_pruned": true
+    },
+    "skew": {
+      "max_key_cardinality": 100000,
+      "hot_keys": true
+    },
+    "schedule": {
+      "cadence": "daily",
+      "runs_per_month": 30,
+      "criticality": "high"
+    },
+    "analog": {
+      "job_id": "deliveryline-us-gold",
+      "dbus_per_hour": 96,
+      "runtime_hours": 2.4,
+      "size_bytes": 1759218604441,
+      "load_strategy": "upsert"
+    },
+    "pricing": {
+      "jobs_dbu_usd": 0.3,
+      "all_purpose_dbu_usd": 0.55,
+      "photon_dbu_mult": 2.0
+    }
+  }
+}

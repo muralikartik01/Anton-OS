@@ -1,0 +1,45 @@
+# Lineage Extraction Input Scope
+# ===============================
+# Specify which Gold tables/pipelines/notebooks to process for lineage extraction.
+# The lineage-extraction skill reads this file to determine extraction scope.
+#
+# Object Types:
+#   - table: Gold table 3-part name (catalog.schema.table)
+#   - pipeline: Pipeline name starting with PL_
+#   - notebook: Databricks notebook path starting with /Workspace/
+#
+# Wildcards:
+#   - Use * to match all in a pattern (e.g., {gold_schema}.*)
+#   - Leave entries array empty [] to skip lineage extraction
+
+schema_version: "1.0"
+last_updated: "2026-07-09"
+description: "Input scope for Program lineage extraction"
+
+# Extraction entries - add Gold tables/pipelines/notebooks here
+entries:
+  # Example: Extract lineage for specific table
+  - object_type: table
+    object_name: {gold_catalog}.{gold_schema}.product
+    notes: "BU1 US Product master data"
+    
+  # Example: Extract lineage for specific pipeline
+  - object_type: pipeline
+    object_name: PL_Example_BU1_US_Product
+    notes: "Product pipeline"
+    
+  # Example: Extract lineage for specific notebook
+  # - object_type: notebook
+  #   object_name: /Workspace/{your_workspace_path}/PTS/BU1/US/NB_Example_BU1_US_Product
+  #   notes: "Product notebook"
+    
+  # Example: Batch extraction for all tables in a schema (use with caution)
+  # - object_type: table
+  #   object_name: {gold_catalog}.{gold_schema}.*
+  #   notes: "All PTS gold tables"
+
+# Processing Notes:
+# - Leave entries: [] empty to skip lineage extraction
+# - Skill will query audit_parameters table via MCP based on object_type/object_name
+# - Results are incrementally merged into Copilot/LineageConfigJSON/
+# - Duplicate entries are detected and user is asked for confirmation before update

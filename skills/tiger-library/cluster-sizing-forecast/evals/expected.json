@@ -1,0 +1,184 @@
+{
+  "abstain_unreadable": {
+    "abstained": true,
+    "workload_class": null,
+    "checks": {
+      "is_null": [
+        "recommended_cluster"
+      ],
+      "equals": {
+        "options": [],
+        "cost_projection.runs_per_month": 0
+      },
+      "not_empty": [
+        "abstain_reasons"
+      ],
+      "cost_band": [
+        "cost_projection.per_run_usd"
+      ]
+    }
+  },
+  "deliveryline_sa": {
+    "abstained": false,
+    "workload_class": "merge_heavy",
+    "checks": {
+      "equals": {
+        "recommended_cluster.photon": true,
+        "recommended_cluster.spot_workers": false,
+        "cost_projection.confidence": "high"
+      },
+      "startswith": {
+        "recommended_cluster.node_type_id": "Standard_E"
+      },
+      "node_family": {
+        "recommended_cluster.node_type_id": "memory"
+      },
+      "gte": {
+        "recommended_cluster.autoscale.max_workers": 2,
+        "cost_projection.per_run_usd.expected": 100,
+        "rationale.min_cores": 1,
+        "rationale.est_shuffle_gb": 28000
+      },
+      "length": {
+        "options": 3
+      },
+      "cost_band": [
+        "cost_projection.per_run_usd"
+      ]
+    }
+  },
+  "join_heavy_smj": {
+    "abstained": false,
+    "workload_class": "join_heavy",
+    "checks": {
+      "equals": {
+        "recommended_cluster.photon": true
+      },
+      "one_of": {
+        "recommended_cluster.node_type_id": [
+          "Standard_E16ds_v5",
+          "Standard_E32ds_v5",
+          "Standard_E64ds_v5",
+          "Standard_D16ds_v5",
+          "Standard_D32ds_v5",
+          "Standard_D64ds_v5"
+        ]
+      },
+      "gte": {
+        "rationale.shuffle_partitions": 7000,
+        "rationale.min_cores": 1
+      },
+      "cost_band": [
+        "cost_projection.per_run_usd"
+      ]
+    }
+  },
+  "merge_pruned": {
+    "abstained": false,
+    "workload_class": "merge_heavy",
+    "checks": {
+      "equals": {
+        "recommended_cluster.photon": true
+      },
+      "startswith": {
+        "recommended_cluster.node_type_id": "Standard_E"
+      },
+      "node_family": {
+        "recommended_cluster.node_type_id": "memory"
+      },
+      "range": {
+        "rationale.est_shuffle_gb": [
+          23000,
+          25000
+        ],
+        "cost_projection.per_run_usd.expected": [
+          40,
+          80
+        ]
+      },
+      "gte": {
+        "recommended_cluster.autoscale.max_workers": 2
+      },
+      "cost_band": [
+        "cost_projection.per_run_usd"
+      ],
+      "assumption_contains": [
+        "partition pruning"
+      ]
+    }
+  },
+  "no_analog_lowconf": {
+    "abstained": false,
+    "workload_class": "join_heavy",
+    "checks": {
+      "equals": {
+        "cost_projection.confidence": "low"
+      },
+      "gte": {
+        "cost_projection.per_run_usd.expected": 0.01,
+        "rationale.min_cores": 1
+      },
+      "not_empty": [
+        "assumptions"
+      ],
+      "cost_band": [
+        "cost_projection.per_run_usd"
+      ],
+      "assumption_contains": [
+        "no analog supplied",
+        "pricing.jobs_dbu_usd sourced from billing_rates.csv"
+      ]
+    }
+  },
+  "simple_etl_small": {
+    "abstained": false,
+    "workload_class": "simple_etl",
+    "checks": {
+      "equals": {
+        "recommended_cluster.node_type_id": "Standard_D4ds_v5",
+        "recommended_cluster.num_workers": 0,
+        "recommended_cluster.photon": false
+      },
+      "node_family": {
+        "recommended_cluster.node_type_id": "general"
+      },
+      "lte": {
+        "cost_projection.per_run_usd.expected": 0.05
+      },
+      "cost_band": [
+        "cost_projection.per_run_usd"
+      ]
+    }
+  },
+  "window_heavy": {
+    "abstained": false,
+    "workload_class": "window_heavy",
+    "checks": {
+      "equals": {
+        "recommended_cluster.photon": true,
+        "rationale.skew_hedge": true
+      },
+      "startswith": {
+        "recommended_cluster.node_type_id": "Standard_E"
+      },
+      "node_family": {
+        "recommended_cluster.node_type_id": "memory"
+      },
+      "range": {
+        "rationale.est_shuffle_gb": [
+          250,
+          300
+        ]
+      },
+      "gte": {
+        "rationale.mem_gb": 10000
+      },
+      "cost_band": [
+        "cost_projection.per_run_usd"
+      ],
+      "assumption_contains": [
+        "+50% memory hedge"
+      ]
+    }
+  }
+}

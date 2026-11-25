@@ -1,0 +1,46 @@
+project:
+  id: example-project
+  name: Example Data Migration
+  description: Databricks medallion migration demo (landing -> Bronze -> Silver)
+
+# Source/target names are NOT configured here. They are workflow inputs
+# (/db-kit-migrate --source <type>:<location> --target databricks --landing <catalog>.<schema> ...)
+# and are stored in each run record. Supported source types: databricks, azuresql, postgres.
+platform:
+  source:
+    - type: databricks
+      role: landing_zone
+      environment_tag: non-production
+    - type: azure-sql
+      role: source_database
+      environment_tag: non-production
+    - type: postgresql
+      role: source_database
+      environment_tag: non-production
+  target:
+    type: databricks
+    environment_tag: non-production
+
+migration:
+  scope:
+    - bronze
+    - silver
+  production_writes_enabled: false
+
+context:
+  knowledge_graph:
+    provider: neo4j
+    access: mcp
+    mcp_server: db-kit-context
+  repository_paths:
+    - .
+  documentation_paths: []
+
+policy:
+  require_plan_approval: true
+  require_artifact_review: true
+  allow_destructive_operations: false
+  context_budget:
+    enforcement: soft_warning   # see gap-resolutions design doc §6
+    max_files_per_discovery_pass: 200
+    max_content_bytes_per_discovery_pass: 5000000

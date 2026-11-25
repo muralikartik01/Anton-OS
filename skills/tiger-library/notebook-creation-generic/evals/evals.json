@@ -1,0 +1,135 @@
+{
+  "skill_name": "notebook-creation-generic",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create generic notebook for OperationalExpenseInvoiceFlattened silver to gold using the STTM in Output/STTM_DDL_creation/",
+      "expected_output": "A .py file in Output/CodeGeneration/ with a 10-section structure, Upsert strategy (MERGE INTO on InvoiceSourceName), no PepsiCo framework imports, and a Delta audit table write.",
+      "assertions": [
+        {
+          "text": "Output file exists at Output/CodeGeneration/ with a name matching the table and source layer",
+          "type": "file_exists"
+        },
+        {
+          "text": "Notebook contains MAGIC %md header cell with project name, purpose, source/target, and load strategy",
+          "type": "content_check"
+        },
+        {
+          "text": "Imports block contains only stdlib and PySpark imports — no cdo_audit_framework_wd_la or cdo_dq_framework",
+          "type": "negative_check"
+        },
+        {
+          "text": "Notebook declares exactly 4 widgets: job_id, run_id, pipeline_name, run_ts — each with an or-fallback default",
+          "type": "content_check"
+        },
+        {
+          "text": "Variable block contains INPUT_TABLES, GOLD_DB, MERGE_KEYS, LOAD_STRATEGY",
+          "type": "content_check"
+        },
+        {
+          "text": "Source tables are read via spark.table() and registered as temp views via createOrReplaceTempView()",
+          "type": "content_check"
+        },
+        {
+          "text": "Transformation SQL uses STTM column mappings with explicit CAST and AS aliases — no SELECT *",
+          "type": "content_check"
+        },
+        {
+          "text": "SELECT contains mandatory audit columns: XTNCreatedTime, XTNCreatedById, XTNUpdatedTime, XTNUpdatedById",
+          "type": "content_check"
+        },
+        {
+          "text": "Write logic uses DeltaTable.merge with MERGE_KEYS — Upsert strategy detected from STTM",
+          "type": "content_check"
+        },
+        {
+          "text": "Audit row written via spark.createDataFrame(audit_row, schema) with explicit DDL schema string and .write.format('delta').mode('append').saveAsTable(AUDIT_TABLE)",
+          "type": "content_check"
+        },
+        {
+          "text": "Audit write is wrapped in its own try/except and does NOT set status = 'Failed' on exception",
+          "type": "content_check"
+        },
+        {
+          "text": "Notebook ends with dbutils.notebook.exit() on success and raise Exception on failure",
+          "type": "content_check"
+        },
+        {
+          "text": "No display(), show(), or count() calls anywhere in the notebook",
+          "type": "negative_check"
+        },
+        {
+          "text": "No %run ./notebook_common_utils or %run ./notebook_common_variables in the notebook",
+          "type": "negative_check"
+        }
+      ],
+      "files": [
+        "Output/STTM_DDL_creation/Global_Procurement_procurement_OperationalExpenseInvoiceFlattened(TravelAndExpenseInvoice-GBT) (2).csv"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Build a simple etl notebook for a table with no merge keys — should use Append strategy",
+      "expected_output": "A .py notebook using df_final.write.format('delta').mode('append').saveAsTable(full_target) instead of DeltaTable.merge, with MERGE_KEYS as an empty list, all 10 sections intact, and a Delta audit write.",
+      "assertions": [
+        {
+          "text": "MERGE_KEYS is set to an empty list []",
+          "type": "content_check"
+        },
+        {
+          "text": "LOAD_STRATEGY is set to 'append'",
+          "type": "content_check"
+        },
+        {
+          "text": "Write logic uses .write.format('delta').mode('append') — no DeltaTable.merge call",
+          "type": "content_check"
+        },
+        {
+          "text": "All 10 notebook sections (header, imports, widgets, variables, read, transform, write, audit, exit) are present",
+          "type": "content_check"
+        },
+        {
+          "text": "Mandatory XTN audit columns still appear in the SELECT",
+          "type": "content_check"
+        },
+        {
+          "text": "No cdo_audit_framework_wd_la or cdo_dq_framework imports",
+          "type": "negative_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Generate a standalone notebook for a full-reload table — delete existing data for SystemId then insert fresh",
+      "expected_output": "A .py notebook with LOAD_STRATEGY='delete-insert', containing a spark.sql DELETE WHERE XTNDFSystemId = {SYSTEM_ID} statement followed by .write.format('delta').mode('append'), with all standard sections and Delta audit write intact.",
+      "assertions": [
+        {
+          "text": "LOAD_STRATEGY is set to 'delete-insert'",
+          "type": "content_check"
+        },
+        {
+          "text": "Write section contains TRUNCATE TABLE statement followed by .write.format('delta').mode('append')",
+          "type": "content_check"
+        },
+        {
+          "text": "DELETE is followed by .write.format('delta').mode('append') — not MERGE INTO",
+          "type": "content_check"
+        },
+        {
+          "text": "Audit row is written to audit_table after the delete-insert completes",
+          "type": "content_check"
+        },
+        {
+          "text": "Unity Catalog three-part names (catalog.schema.table) used for all table references",
+          "type": "content_check"
+        },
+        {
+          "text": "No %run utility notebooks present",
+          "type": "negative_check"
+        }
+      ],
+      "files": []
+    }
+  ]
+}

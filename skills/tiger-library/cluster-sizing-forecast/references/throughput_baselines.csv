@@ -1,0 +1,6 @@
+workload_type,dbu_per_gb,overhead_pct,description,source
+simple_read_write,3.0,0.10,INSERT INTO / INSERT OVERWRITE Delta-to-Delta (no transformation logic),Observed historical runs (replace with your own)
+light_transform,4.0,0.10,SELECT with column expressions — filters renames casts,Observed historical runs (replace with your own)
+medium_transform,6.0,0.10,Multi-table joins GROUP BY aggregations,Observed historical runs (replace with your own)
+heavy_transform,10.0,0.10,Complex UDFs window functions iterative logic,Observed historical runs (replace with your own)
+delete_purge_partitioned,0.3,0.00,Per GB of data scanned for partitioned DELETE predicate,Observed historical runs (replace with your own)

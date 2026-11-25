@@ -1,0 +1,86 @@
+workflow_id: source_onboarding_to_bronze
+version: "1.0"
+description: >
+  Onboard a source (or a scoped subset of tables from one), run data-quality
+  checks against it, then generate Bronze-only ingestion artifacts. Stops at
+  Bronze deliberately -- no Silver, no Gold, no business-rule transformation.
+  Sits between data_quality_check (no migration at all) and
+  legacy_to_bronze_silver_migration (full Bronze+Silver with an approval
+  checkpoint) as the next-simplest step up.
+
+inputs:
+  - name: scope
+    description: Explicit table names, or a source-system/schema filter.
+    required: true
+  - name: run_id
+    description: Generated if not supplied.
+    required: false
+
+prerequisites:
+  - db-kit-context MCP server configured (real or mock -- see integrations/mcp/neo4j-context/)
+  - Source connection declared in config/project.yaml / config/integrations.yaml
+
+steps:
+  - id: source_onboarding
+    agent: discovery
+    skills: [project-discovery/table-shortlisting, repository-analysis/repository-analysis, source-analysis/data-profiling]
+    output: [shortlist, code_inventory, profile]
+    description: >
+      Scope the run to a concrete table list, inventory any source-side
+      pipeline code not yet in the knowledge graph, and profile each
+      in-scope table. This is scoped onboarding of a source for this run --
+      not a re-run of the one-time project onboarding in spec section 4.
+  - id: quality_check
+    agent: validation
+    skills: [data-quality/quality-rule-generation, data-quality/quality-check-execution]
+    input: [shortlist, profile]
+    output: artifacts/validation/<project-id>/<run-id>/{test-plan.md,results.md}
+    description: >
+      Advisory, not a gate on Bronze: Bronze is a raw copy of the source,
+      so a data-quality finding doesn't block landing the data -- it's
+      carried into the final report so Silver work (a separate, later
+      workflow) starts from known issues rather than rediscovering them.
+  - id: bronze_mapping
+    agent: migration-architect
+    skills: [medallion-design/medallion-design, source-to-target-mapping/source-to-target-mapping]
+    input: [shortlist, profile, code_inventory]
+    output: artifacts/migration-plans/<project-id>/<run-id>/{blueprint.md,source-to-target-mapping.yaml}
+    description: >
+      Bronze shape only -- source schema preserved as-is plus ingestion
+      metadata (rules/medallion/layer-conventions.md). No business-rule
+      design work; that belongs to a Silver-scoped workflow.
+  - id: bronze_generation
+    agent: transformation
+    skills: [sql-migration/sql-migration]
+    input: artifacts/migration-plans/<project-id>/<run-id>/source-to-target-mapping.yaml
+    output: artifacts/generated-code/<project-id>/<run-id>/bronze/
+  - id: report
+    agent: review
+    output: artifacts/reports/<project-id>/<run-id>/onboarding-report.md
+
+context_requirements:
+  - db-kit-context MCP (read: list_schema, query_context, get_entity, get_lineage; write: annotate_entity for discovered gaps)
+  - Source connection (read-only SQL for profiling and check execution)
+
+tool_requirements:
+  - MCP db-kit-context
+  - Read-only SQL access to the declared source connection
+
+checkpoints:
+  - After every step, the run record (observability/run-records/<run-id>.yaml) is updated with step status and artifact references before moving on.
+
+approval_gates:
+  - None. Quality checks are read-only against a non-production connection, and Bronze generation writes code to the repo (not to a real connection) with no business logic applied -- a raw, reversible, re-runnable copy. hooks/pre-execution/ still apply uniformly as a backstop. A later Silver-scoped workflow is where an approval checkpoint belongs, once business rules are in play.
+
+validation_requirements:
+  - results.md must carry an explicit pass/fail/blocked status for every rule in test-plan.md -- enforced by hooks/validation/ before the report step runs.
+
+outputs:
+  - artifacts/validation/<project-id>/<run-id>/{test-plan.md,results.md}
+  - artifacts/migration-plans/<project-id>/<run-id>/{blueprint.md,source-to-target-mapping.yaml}
+  - artifacts/generated-code/<project-id>/<run-id>/bronze/
+  - artifacts/reports/<project-id>/<run-id>/onboarding-report.md
+
+failure_and_recovery:
+  - Any step that cannot complete (MCP unavailable, connection unreachable, requested table not found) sets the run record state to `blocked` with the reason recorded, rather than guessing or skipping silently.
+  - A blocked or interrupted run resumes via the `/db-kit-resume <run-id>` command, which reads the run record and continues from the last completed step.

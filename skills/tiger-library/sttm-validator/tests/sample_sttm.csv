@@ -1,0 +1,7 @@
+Source Schema Name,Source Table Name,Source Column Name,Target Schema Name,Target Table Name,Target Column Name,Target Data Type,Allow Nulls in Target,Target Primary Key,Version,Date,Merge Key,Data Transformation Rules,Transformation Logic
+sales,customer,customer_id,dw,customer,customer_id,STRING,N,PK,V1,2026-01-10,Y,Direct,
+sales,customer,name,dw,customer,customer_name,STRING,Y,,V1,2026-01-10,NULL,Direct,
+,, ,dw,customer,ingestion_date,DATE,N,,V1,2026-01-10,NULL,Derived,Current timestamp
+sales,orders,order_id,dw,orders,order_id,STRING,N,PK,V1,2026-01-11,Y,Direct,
+sales,orders,order_amount,dw,orders,order_amount,DECIMAL(18,2),Y,,V1,2026-01-11,NULL,Transformed,CAST(order_amount AS DECIMAL(18,2))
+sales,orders,order_id,dw,orders,order_id,STRING,N,PK,V1,2026-01-11,Y,Direct,

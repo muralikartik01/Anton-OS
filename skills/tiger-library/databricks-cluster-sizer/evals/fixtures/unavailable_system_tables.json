@@ -1,0 +1,20 @@
+{
+  "description": "Agent ran the MCP utilization query but system tables returned no rows (system.compute not enabled or no SELECT grant). The worker profile is empty -> the scorer must abstain, never guess.",
+  "config": {
+    "cluster_id": "0101-unavail",
+    "cluster_name": "etl-nightly",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": 4,
+    "min_autoscale_workers": null,
+    "max_autoscale_workers": null,
+    "auto_termination_minutes": 30,
+    "cluster_source": "JOB"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": null,
+    "worker": null,
+    "driver": null
+  }
+}

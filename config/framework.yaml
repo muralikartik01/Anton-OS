@@ -1,0 +1,25 @@
+# DB-Kit Core framework configuration
+
+framework:
+  version: "1.0"
+  phase: 1
+
+dynamic_workflows:
+  enabled: false   # deferred post-pilot — gap-resolutions design doc §4
+
+workflow_state:
+  resume_mechanism: run_record_file
+  run_records_path: observability/run-records
+
+hooks:
+  enforcement:
+    secrets: hard_block
+    destructive_sql: hard_block_unless_approved
+    production_writes: hard_block_unless_approved
+    integration_allowlist: hard_block
+    validation_before_review: hard_block
+
+ownership:
+  rules: always_loaded_constraints
+  skills: invocable_procedures
+  agents: scoped_roles_referencing_rules_and_skills

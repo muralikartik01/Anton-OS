@@ -1,0 +1,75 @@
+# MCP and other integrations configuration
+
+mcp:
+  db-kit-context:
+    purpose: Read discovery knowledge graph (Neo4j) and write DB-Kit annotations
+    provider: neo4j
+    status: mock   # real server in parallel development by the knowledge-graph team
+    mock_implementation: integrations/mcp/neo4j-context/mock_server
+    contract: integrations/mcp/neo4j-context/CONTRACT.md
+    allowed_operations:
+      - list_schema
+      - get_entity
+      - query_context
+      - get_lineage
+      - annotate_entity
+
+  db-kit-databricks:
+    purpose: Real Databricks SQL / Unity Catalog connector -- profiling, validation execution, Bronze/Silver DDL/DML
+    provider: databricks
+    status: real   # live workspace; credentials from env vars only
+    implementation: integrations/mcp/databricks-sql
+    contract: integrations/mcp/databricks-sql/CONTRACT.md
+    connection: env_vars   # DB_KIT_DBX_HOST / DB_KIT_DBX_HTTP_PATH / DB_KIT_DBX_TOKEN -- never put values in this file
+    production: false      # Databricks TEST catalog, confirmed by the user
+    allowed_operations:
+      - list_tables
+      - describe_table
+      - execute_sql_read_only
+      - execute_statement
+
+  db-kit-azuresql:
+    purpose: Real READ-ONLY Azure SQL Database source connector -- discovery and profiling when the run's source type is azuresql
+    provider: azure-sql
+    status: real   # live database; credentials from env vars only; no write tool exists
+    implementation: integrations/mcp/azuresql
+    contract: integrations/mcp/azuresql/CONTRACT.md
+    connection: env_vars   # DB_KIT_AZSQL_SERVER / DATABASE / USER / PASSWORD -- never put values in this file
+    production: false      # CONFIRM this is a non-production database (connector is read-only regardless)
+    allowed_operations:
+      - list_tables
+      - describe_table
+      - execute_sql_read_only
+
+  db-kit-postgres:
+    purpose: Real READ-ONLY Azure Database for PostgreSQL source connector -- discovery and profiling when the run's source type is postgres
+    provider: postgresql
+    status: real   # live database; credentials from env vars only; no write tool exists; session is read-only
+    implementation: integrations/mcp/postgres
+    contract: integrations/mcp/postgres/CONTRACT.md
+    connection: env_vars   # DB_KIT_PG_HOST / DATABASE / USER / PASSWORD -- never put values in this file
+    production: false      # CONFIRM this is a non-production database (connector is read-only regardless)
+    allowed_operations:
+      - list_tables
+      - describe_table
+      - execute_sql_read_only
+
+# Connection types available as run inputs (/db-kit-migrate --source <type>:<...> --target databricks).
+# The run's chosen source decides which MCP server discovery uses; target is always databricks in Phase 1.
+connections:
+  source:
+    type: databricks
+    environment_tag: non-production
+    production: false
+  azuresql_source:
+    type: azure-sql
+    environment_tag: non-production
+    production: false
+  postgres_source:
+    type: postgresql
+    environment_tag: non-production
+    production: false
+  target:
+    type: databricks
+    environment_tag: non-production
+    production: false

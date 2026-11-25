@@ -1,0 +1,24 @@
+{
+  "inputs": {
+    "load_strategy": "append",
+    "sources": [
+      {
+        "fqn": "uc.no_analog",
+        "size_bytes": 26843545600,
+        "num_files": 500,
+        "row_count": 100000000
+      }
+    ],
+    "joins": [
+      {
+        "type": "left",
+        "right_role": "dim",
+        "right_size_bytes": 52428800
+      }
+    ],
+    "schedule": {
+      "cadence": "daily",
+      "runs_per_month": 30
+    }
+  }
+}

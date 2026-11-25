@@ -1,0 +1,5 @@
+GOLD SOURCE ,,,,,,,GOLD TARGET TABLE,,,,,,,,,,,GOLD View ,,,,
+Data Lake,Source Table Name,Source Column,Data Type,Null /,Primary Key,,Data Lake,Gold Table Name,Gold Table Column Name,Column Defintion,Data Type,Null /,Primary Key,Merge Key,Default Value,Data Transformation Rules,,Data Lake,Common View Name,Common View Column Name,Data Transformation Rules,Version
+,,,,Not Null,,,,,,,,Not Null,,,,,,,,,,
+source_catalog.product.ProductMaster,ProductMaster,ProductId,String,Not Null,,,target_catalog.product_gold,ProductMaster,ProductId,Unique identifier assigned to each product,String,Not Null,Yes,,,"Direct mapping",,target_catalog.product_gold_vw,ProductMaster_vw,ProductId,Direct mapping,V1
+source_catalog.product.ProductMaster,ProductMaster,ProductName,String,Not Null,,,target_catalog.product_gold,ProductMaster,ProductName,Display name used in reporting and planning,String,Not Null,,,,TRIM(ProductName),,target_catalog.product_gold_vw,ProductMaster_vw,ProductName,Trim whitespace,V1

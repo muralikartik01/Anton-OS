@@ -1,0 +1,93 @@
+{
+  "skill_name": "notebook-creation",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Build a Gold notebook from the STTM in Output/STTM_DDL_creation/ for OperationalExpenseInvoiceFlattened",
+      "expected_output": "A .py file in Output/CodeGeneration/ with all 29 sections, Upsert merge strategy, SystemId=101474, ReportingUnitId=107019, source tables fdn_supplier.XTNBusinessTravelFlightReservation and snp_common_dimensions.SCD2Employee",
+      "assertions": [
+        {
+          "text": "Output file exists at Output/CodeGeneration/snp_operational_expense_invoice_flattened_silver_to_gold.py",
+          "type": "file_exists"
+        },
+        {
+          "text": "Notebook contains MAGIC %md header cell with project name, purpose, creator, system IDs",
+          "type": "content_check"
+        },
+        {
+          "text": "Notebook contains MAGIC %run ./notebook_common_utils and ./notebook_common_variables",
+          "type": "content_check"
+        },
+        {
+          "text": "Imports are grouped: stdlib then pyspark then pepsico frameworks",
+          "type": "content_check"
+        },
+        {
+          "text": "No hardcoded values — systemId, reportingUnitId, gold_database_name come from project_params",
+          "type": "content_check"
+        },
+        {
+          "text": "Transformation SQL uses STTM column mappings with proper aliases",
+          "type": "content_check"
+        },
+        {
+          "text": "MERGE ON clause includes merge key columns from STTM",
+          "type": "content_check"
+        },
+        {
+          "text": "Audit framework au.log_audit_data() is called on success and failure paths",
+          "type": "content_check"
+        },
+        {
+          "text": "No display(), show(), or count() statements in production cells",
+          "type": "negative_check"
+        },
+        {
+          "text": "Notebook ends with notebook_exit_return_parameters or raise Exception",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Generate silver to gold ETL notebook for a table with no merge keys, only primary keys — should use Append strategy",
+      "expected_output": "A .py notebook using df.write.format('delta').mode('append') instead of MERGE INTO, with all other standard sections intact",
+      "assertions": [
+        {
+          "text": "Write logic uses .mode('append') not MERGE INTO",
+          "type": "content_check"
+        },
+        {
+          "text": "Standard 29-section notebook structure is preserved",
+          "type": "content_check"
+        },
+        {
+          "text": "Audit and DQ framework sections are present",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Create a new Databricks notebook for a Gold table with SCD Type 2 columns (effective_date, end_date, is_current)",
+      "expected_output": "A .py notebook implementing SCD2 merge logic with effective_date, end_date, and is_current handling, expiring old records and inserting new versions",
+      "assertions": [
+        {
+          "text": "Merge logic handles expiring existing records (setting end_date and is_current=false)",
+          "type": "content_check"
+        },
+        {
+          "text": "New records inserted with is_current=true and effective_date set",
+          "type": "content_check"
+        },
+        {
+          "text": "Unity Catalog three-part naming used for all table references",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    }
+  ]
+}

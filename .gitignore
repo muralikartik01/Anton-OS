@@ -1,0 +1,9 @@
+observability/run-records/*.yaml
+integrations/mcp/neo4j-context/mock_server/.venv
+__pycache__/
+*.pyc
+.env
+.venv/
+integrations/mcp/databricks-sql/.venv
+integrations/mcp/azuresql/.venv
+integrations/mcp/postgres/.venv

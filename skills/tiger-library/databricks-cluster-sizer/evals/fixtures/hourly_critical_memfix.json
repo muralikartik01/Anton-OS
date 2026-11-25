@@ -1,0 +1,39 @@
+{
+  "description": "Hourly, business-critical job that is spilling to disk (swap>0). Must scale UP to more RAM (guardrail blocks any downsize), and the high criticality biases to the on-demand Performance tier. Recommended tier = Performance.",
+  "config": {
+    "cluster_id": "0303-hourly",
+    "cluster_name": "hourly-feature-pipeline",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": 4,
+    "min_autoscale_workers": null,
+    "max_autoscale_workers": null,
+    "auto_termination_minutes": 20,
+    "cluster_source": "JOB"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": 4,
+    "worker": {"sample_minutes": 180, "cpu_p50": 40.0, "cpu_p95": 58.0, "cpu_max": 71.0, "mem_p95": 92.0, "mem_max": 98.0, "swap_max": 8.0},
+    "driver": {"sample_minutes": 180, "cpu_p50": 20.0, "cpu_p95": 35.0, "cpu_max": 44.0, "mem_p95": 50.0, "mem_max": 60.0, "swap_max": 0.0},
+    "job": {
+      "job_id": "991122",
+      "name": "hourly-feature-pipeline",
+      "tags": {"criticality": "high", "sla": "30m", "env": "prod"},
+      "health_rules": [{"metric": "RUN_DURATION_SECONDS", "op": "GREATER_THAN", "value": 1800}],
+      "cadence": {"trigger_type": "PERIODIC", "runs_per_week": 168.0}
+    },
+    "workload": {"workload_type": "ml", "shuffle_partitions": 256, "is_serverless": false, "uses_pool": true},
+    "pricing": {"baseline_cost_usd": 7.10},
+    "trend": {
+      "n_runs": 120,
+      "runtime_seconds_p50": 540,
+      "runtime_seconds_p90": 720,
+      "runtime_seconds_stddev": 110,
+      "runtime_recency_corr": 0.45,
+      "cost_usd_p50": 7.10,
+      "cost_usd_p90": 9.40,
+      "success_rate": 0.96
+    }
+  }
+}

@@ -1,0 +1,15 @@
+# Registered workflows for DB-Kit
+
+workflows:
+  - id: data_quality_check
+    version: "1.0"
+    definition: workflows/templates/data-quality-check.yaml
+    status: active
+  - id: source_onboarding_to_bronze
+    version: "1.0"
+    definition: workflows/templates/source-onboarding-to-bronze.yaml
+    status: active
+  - id: legacy_to_bronze_silver_migration
+    version: "1.0"
+    definition: workflows/templates/legacy-to-bronze-silver.yaml
+    status: active

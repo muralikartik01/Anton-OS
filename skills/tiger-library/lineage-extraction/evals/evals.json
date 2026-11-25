@@ -1,0 +1,248 @@
+{
+  "test_cases": [
+    {
+      "id": "single_table_extraction",
+      "prompt": "Generate lineage for {gold_schema}.product table",
+      "assertions": [
+        {
+          "name": "output_validates",
+          "check": "Run eval_lineage.py - all checks pass",
+          "type": "script"
+        },
+        {
+          "name": "markets_array_exists",
+          "check": "JSON has 'markets' array with at least 1 entry",
+          "type": "structure"
+        },
+        {
+          "name": "product_table_present",
+          "check": "Product table found in gold_tables[] under correct market",
+          "type": "data"
+        },
+        {
+          "name": "sources_have_valid_types",
+          "check": "All Sources[] have Source_Table_Type in [Bronze, Silver, Gold, Parquet, Reference]",
+          "type": "validation"
+        },
+        {
+          "name": "uc_sources_3part_name",
+          "check": "All Unity Catalog sources (Bronze/Silver/Gold) have 3-part Table_Name (catalog.schema.table)",
+          "type": "validation"
+        },
+        {
+          "name": "system_id_present",
+          "check": "SourceSystemId and ReportingUnitId present (or 'N/A' for Parquet/Bronze)",
+          "type": "data"
+        }
+      ]
+    },
+    {
+      "id": "pipeline_extraction",
+      "prompt": "Extract lineage for pipeline PL_Example_BU1_US_Product",
+      "assertions": [
+        {
+          "name": "output_validates",
+          "check": "Run eval_lineage.py - all checks pass",
+          "type": "script"
+        },
+        {
+          "name": "pipeline_name_matches",
+          "check": "Pipeline_Name field = 'PL_Example_BU1_US_Product'",
+          "type": "data"
+        },
+        {
+          "name": "markets_array_exists",
+          "check": "JSON has 'markets' array with at least 1 entry",
+          "type": "structure"
+        }
+      ]
+    },
+    {
+      "id": "incremental_merge",
+      "prompt": "Update lineage for {gold_schema}.product table",
+      "assumptions": "Existing LineageConfigJSON/Example_Lineage_Config.json with product table entry",
+      "assertions": [
+        {
+          "name": "diff_displayed",
+          "check": "User shown diff between old and new entry",
+          "type": "interaction"
+        },
+        {
+          "name": "user_confirmation_requested",
+          "check": "User prompted 'Accept changes? (Y/N)' before merge",
+          "type": "interaction"
+        },
+        {
+          "name": "existing_entries_preserved",
+          "check": "Tables not in scope remain unchanged in output",
+          "type": "data"
+        },
+        {
+          "name": "backup_created",
+          "check": ".bak file created before writing new JSON",
+          "type": "file"
+        },
+        {
+          "name": "metadata_updated",
+          "check": "lineage_metadata.registry_generated_at timestamp updated",
+          "type": "data"
+        }
+      ]
+    },
+    {
+      "id": "multiple_tables",
+      "prompt": "Generate lineage for all PTS tables in input_scope.yaml",
+      "assumptions": "input_scope.yaml has 3+ entries",
+      "assertions": [
+        {
+          "name": "all_entries_processed",
+          "check": "Count of processed tables = count in input_scope.yaml",
+          "type": "data"
+        },
+        {
+          "name": "summary_statistics_shown",
+          "check": "Summary printed: X processed, Y new, Z updated, W skipped",
+          "type": "output"
+        },
+        {
+          "name": "output_validates",
+          "check": "Run eval_lineage.py - all checks pass",
+          "type": "script"
+        },
+        {
+          "name": "markets_properly_structured",
+          "check": "All markets have market_code, market_name, and gold_tables[] array",
+          "type": "structure"
+        }
+      ]
+    },
+    {
+      "id": "parquet_source_handling",
+      "prompt": "Extract lineage for Gold table that reads from Parquet files",
+      "assumptions": "Target table has source_catalog_name pointing to ADLS path",
+      "assertions": [
+        {
+          "name": "parquet_type_assigned",
+          "check": "Parquet sources have Source_Table_Type = 'Parquet'",
+          "type": "data"
+        },
+        {
+          "name": "source_path_present",
+          "check": "Parquet sources have Source_Path field starting with 'abfss://'",
+          "type": "data"
+        },
+        {
+          "name": "system_id_na_accepted",
+          "check": "SourceSystemId = 'N/A' for Parquet sources without validation error",
+          "type": "validation"
+        },
+        {
+          "name": "output_validates",
+          "check": "Run eval_lineage.py - all checks pass",
+          "type": "script"
+        }
+      ]
+    },
+    {
+      "id": "bronze_staging_table",
+      "prompt": "Extract lineage for Gold table reading from Bronze staging",
+      "assumptions": "Source table in catalog {silver_catalog} with schema containing 'bronze'",
+      "assertions": [
+        {
+          "name": "bronze_type_assigned",
+          "check": "Bronze sources have Source_Table_Type = 'Bronze'",
+          "type": "data"
+        },
+        {
+          "name": "system_id_na_accepted",
+          "check": "System ID = 'N/A' accepted for Bronze staging (no validation error)",
+          "type": "validation"
+        },
+        {
+          "name": "no_filter_accepted",
+          "check": "Missing system ID filter in query does not block processing",
+          "type": "validation"
+        }
+      ]
+    },
+    {
+      "id": "gold_to_gold_reference",
+      "prompt": "Extract lineage for Gold table that reads from another Gold table",
+      "assumptions": "Source catalog != {silver_catalog} or contains 'mosaic' with gold schema",
+      "assertions": [
+        {
+          "name": "gold_type_assigned",
+          "check": "Gold sources have Source_Table_Type = 'Gold'",
+          "type": "data"
+        },
+        {
+          "name": "uc_3part_name",
+          "check": "Gold source Table_Name follows 3-part UC naming (catalog.schema.table)",
+          "type": "validation"
+        },
+        {
+          "name": "system_id_present_or_inherited",
+          "check": "SourceSystemId present or inherited from target table",
+          "type": "data"
+        }
+      ]
+    },
+    {
+      "id": "validation_failure_handling",
+      "prompt": "Generate lineage with intentionally malformed data to test validation",
+      "setup": "Manually corrupt schema or introduce invalid source type after extraction",
+      "assertions": [
+        {
+          "name": "validation_errors_printed",
+          "check": "eval_lineage.py failures printed clearly to user",
+          "type": "output"
+        },
+        {
+          "name": "user_prompted",
+          "check": "User asked 'Validation failed. Write anyway? (Y/N)'",
+          "type": "interaction"
+        },
+        {
+          "name": "abort_on_no",
+          "check": "If user says N → no output file written",
+          "type": "behavior"
+        },
+        {
+          "name": "warning_on_yes",
+          "check": "If user says Y → output written with warning message",
+          "type": "behavior"
+        }
+      ]
+    }
+  ],
+  "assertion_types": {
+    "script": "Execute validation script and check exit code",
+    "structure": "Verify JSON structure conforms to schema",
+    "data": "Check specific field values and presence",
+    "validation": "Ensure validation rules are enforced correctly",
+    "interaction": "Verify user prompts and confirmations",
+    "output": "Check console output messages",
+    "file": "Verify file system operations (backup, write)",
+    "behavior": "Test conditional logic and branching"
+  },
+  "grading_notes": {
+    "critical_failures": [
+      "Output does not validate with eval_lineage.py",
+      "Existing entries lost during merge",
+      "Invalid source types assigned",
+      "Unity Catalog sources missing 3-part names"
+    ],
+    "acceptable_patterns": [
+      "System ID = 'N/A' for Parquet sources",
+      "System ID = 'N/A' for Bronze staging tables",
+      "Missing filters for Bronze sources",
+      "Gold-to-Gold references with inherited system IDs"
+    ],
+    "edge_cases_to_handle": [
+      "Multiple source catalog sets (0-7)",
+      "Cross-market Gold references",
+      "Parquet and UC sources in same table",
+      "Pipeline not found in audit tables (skip gracefully)"
+    ]
+  }
+}

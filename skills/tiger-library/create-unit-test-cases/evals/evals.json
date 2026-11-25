@@ -1,0 +1,157 @@
+{
+  "skill_name": "create-unit-test-cases",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Generate unit tests for databricks/SNP/snp_concur_indirect_expense_silver_to_gold.py — it has CASE WHEN card_type LIKE 'PCARD%' THEN 'PCARD' ELSE 'Non-PCARD' and COALESCE(market_code_a, market_code_b, 'UNK') transformations",
+      "expected_output": "A test notebook at Output/UnitTesting/test_snp_concur_indirect_expense_silver_to_gold.py with: inline createDataFrame covering all CASE branches (PCARD match, non-match, NULL), all COALESCE paths (first non-null, second non-null, all-null), no ADLS reads, no TODO placeholders, all asserts with exact pre-computed expected values",
+      "assertions": [
+        {
+          "text": "Output file exists at Output/UnitTesting/test_snp_concur_indirect_expense_silver_to_gold.py",
+          "type": "file_exists"
+        },
+        {
+          "text": "File contains spark.createDataFrame — no abfss://, dbfs:/, or spark.read.parquet paths",
+          "type": "negative_check"
+        },
+        {
+          "text": "File contains at least one row with card_type matching PCARD% pattern (PCARD branch)",
+          "type": "content_check"
+        },
+        {
+          "text": "File contains at least one row with card_type NOT matching PCARD% pattern (ELSE branch)",
+          "type": "content_check"
+        },
+        {
+          "text": "COALESCE test has three rows: non-null first arg, null first / non-null second, all-null -> 'UNK'",
+          "type": "content_check"
+        },
+        {
+          "text": "No TODO placeholder comments in any assert statement",
+          "type": "negative_check"
+        },
+        {
+          "text": "Tests query global_temp.final_view not a table name specific to the notebook",
+          "type": "content_check"
+        },
+        {
+          "text": "Every sample data row has a # -> trace comment showing expected output column value",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write unit tests for a notebook that does INNER JOIN with a dimension table — rows that miss the join should produce NULL in the joined column",
+      "expected_output": "Test notebook with: one joining row (match) and one non-joining row (miss). The join-miss row produces NULL or COALESCE fallback. The assert uses exact expected values derived from the sample data, not inequality checks like > 0.",
+      "assertions": [
+        {
+          "text": "Sample data contains at least one row where the join key does NOT exist in the dimension table",
+          "type": "content_check"
+        },
+        {
+          "text": "Assert for join-miss row checks for None / NULL explicitly, not just > 0",
+          "type": "content_check"
+        },
+        {
+          "text": "Both source and dimension tables use separate spark.createDataFrame blocks registered as global_temp views",
+          "type": "content_check"
+        },
+        {
+          "text": "No abfss:// or dbfs:/ paths anywhere in the file",
+          "type": "negative_check"
+        },
+        {
+          "text": "File uses dbutils.notebook.run to execute the target notebook (not direct imports)",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Create unit tests for snp_costed_bom_silver_to_gold.py — the notebook has mandatory audit columns XTNDFSystemId=101474 and XTNDFReportingUnitId=107019",
+      "expected_output": "Test notebook asserting XTNDFSystemId == 101474 and XTNDFReportingUnitId == 107019 on output rows, plus a row count assert. All values traced from sample data.",
+      "assertions": [
+        {
+          "text": "File contains assert for XTNDFSystemId == 101474",
+          "type": "content_check"
+        },
+        {
+          "text": "File contains assert for XTNDFReportingUnitId == 107019",
+          "type": "content_check"
+        },
+        {
+          "text": "Row count assert equals the exact number of rows inserted in createDataFrame",
+          "type": "content_check"
+        },
+        {
+          "text": "IS_UNIT_TEST = 'Y' is set in notebook config before dbutils.notebook.run call",
+          "type": "content_check"
+        },
+        {
+          "text": "No hardcoded magic numbers in asserts without a trace comment explaining the origin",
+          "type": "content_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Generate unit tests for a SCD Type 2 notebook that sets is_current=False on old records and inserts new records with is_current=True and effective_date",
+      "expected_output": "Test notebook with sample data covering: one existing active record (is_current=True) that gets expired after an update, and one new record that gets inserted with is_current=True. Asserts check both the expired row and the new row.",
+      "assertions": [
+        {
+          "text": "Sample data contains a pre-existing active record with is_current=True",
+          "type": "content_check"
+        },
+        {
+          "text": "Assert verifies that is_current=False on the expired record after notebook run",
+          "type": "content_check"
+        },
+        {
+          "text": "Assert verifies that the new record has is_current=True",
+          "type": "content_check"
+        },
+        {
+          "text": "effective_date and end_date values in asserts are traced from the sample data dates",
+          "type": "content_check"
+        },
+        {
+          "text": "No abfss:// paths — SCD test data is entirely inline createDataFrame",
+          "type": "negative_check"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Write unit tests for snp_ocean_freight_silver_to_gold.py which reads from two source tables: fdn_logistics.FreightInvoice and snp_common_dimensions.SCD2Carrier",
+      "expected_output": "Test notebook with two separate createDataFrame blocks — one for each source table — registered as separate global_temp views. All test data inline, no ADLS, exact expected values for all asserts.",
+      "assertions": [
+        {
+          "text": "Two separate spark.createDataFrame blocks exist — one per source table",
+          "type": "content_check"
+        },
+        {
+          "text": "Both DataFrames are registered with createOrReplaceGlobalTempView",
+          "type": "content_check"
+        },
+        {
+          "text": "No abfss://, dbfs:/, or spark.read calls anywhere in the file",
+          "type": "negative_check"
+        },
+        {
+          "text": "Test assertions reference global_temp.final_view not either source view directly",
+          "type": "content_check"
+        },
+        {
+          "text": "File is under Output/UnitTesting/ with naming convention test_snp_ocean_freight_silver_to_gold.py",
+          "type": "file_exists"
+        }
+      ],
+      "files": []
+    }
+  ]
+}

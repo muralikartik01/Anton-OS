@@ -1,0 +1,38 @@
+{
+  "inputs": {
+    "load_strategy": "append",
+    "sources": [
+      {
+        "fqn": "uc.windows",
+        "size_bytes": 96636764160,
+        "num_files": 2000,
+        "row_count": 350000000
+      }
+    ],
+    "aggregations": [
+      {
+        "kind": "window",
+        "input_size_bytes": 96636764160,
+        "low_cardinality": true,
+        "unbounded_frame": true
+      },
+      {
+        "kind": "count_distinct",
+        "input_size_bytes": 96636764160
+      }
+    ],
+    "skew": {
+      "max_key_cardinality": 1000
+    },
+    "schedule": {
+      "cadence": "daily",
+      "runs_per_month": 30,
+      "criticality": "medium"
+    },
+    "pricing": {
+      "jobs_dbu_usd": 0.3,
+      "all_purpose_dbu_usd": 0.55,
+      "photon_dbu_mult": 2.0
+    }
+  }
+}

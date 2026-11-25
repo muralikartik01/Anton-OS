@@ -1,0 +1,38 @@
+{
+  "description": "Daily job, no explicit tags -> criticality derived from cadence (medium). Over-provisioned but the default tier balances cost and runtime risk. Recommended tier = Balanced.",
+  "config": {
+    "cluster_id": "0202-daily",
+    "cluster_name": "daily-sales-agg",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": 6,
+    "min_autoscale_workers": null,
+    "max_autoscale_workers": null,
+    "auto_termination_minutes": 30,
+    "cluster_source": "JOB"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": 6,
+    "worker": {"sample_minutes": 150, "cpu_p50": 19.0, "cpu_p95": 28.0, "cpu_max": 41.0, "mem_p95": 33.0, "mem_max": 40.0, "swap_max": 0.0},
+    "driver": {"sample_minutes": 150, "cpu_p50": 11.0, "cpu_p95": 21.0, "cpu_max": 31.0, "mem_p95": 27.0, "mem_max": 34.0, "swap_max": 0.0},
+    "job": {
+      "job_id": "445566",
+      "name": "daily-sales-agg",
+      "tags": {"env": "prod"},
+      "cadence": {"trigger_type": "PERIODIC", "runs_per_week": 7.0}
+    },
+    "workload": {"workload_type": "simple_etl", "shuffle_partitions": 200, "is_serverless": false, "uses_pool": false},
+    "pricing": {"baseline_cost_usd": 9.80},
+    "trend": {
+      "n_runs": 20,
+      "runtime_seconds_p50": 900,
+      "runtime_seconds_p90": 1050,
+      "runtime_seconds_stddev": 70,
+      "runtime_recency_corr": 0.10,
+      "cost_usd_p50": 9.80,
+      "cost_usd_p90": 11.20,
+      "success_rate": 1.0
+    }
+  }
+}

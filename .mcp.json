@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "db-kit-context": {
+      "command": "/home/kartikmurali/projects/db-kit/integrations/mcp/neo4j-context/mock_server/.venv/bin/python",
+      "args": [
+        "/home/kartikmurali/projects/db-kit/integrations/mcp/neo4j-context/mock_server/server.py"
+      ]
+    },
+    "db-kit-databricks": {
+      "command": "/home/kartikmurali/projects/db-kit/integrations/mcp/databricks-sql/.venv/bin/python",
+      "args": [
+        "/home/kartikmurali/projects/db-kit/integrations/mcp/databricks-sql/server.py"
+      ]
+    },
+    "db-kit-azuresql": {
+      "command": "/home/kartikmurali/projects/db-kit/integrations/mcp/azuresql/.venv/bin/python",
+      "args": [
+        "/home/kartikmurali/projects/db-kit/integrations/mcp/azuresql/server.py"
+      ]
+    },
+    "db-kit-postgres": {
+      "command": "/home/kartikmurali/projects/db-kit/integrations/mcp/postgres/.venv/bin/python",
+      "args": [
+        "/home/kartikmurali/projects/db-kit/integrations/mcp/postgres/server.py"
+      ]
+    }
+  }
+}

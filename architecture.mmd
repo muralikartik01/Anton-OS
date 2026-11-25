@@ -1,0 +1,77 @@
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Inter, Segoe UI, Roboto, sans-serif', 'fontSize': '14px'}}}%%
+flowchart TB
+    subgraph DB_KIT["🏗️ DB KIT ARCHITECTURE"]
+        direction TB
+
+        subgraph Core["🧠 DB-KIT Core"]
+            direction TB
+            Core_R1_1("📜 Rules") ~~~ Core_R1_2("🪝 Hooks") ~~~ Core_R1_3("💾 Memory")
+            Core_R2_1("🗂️ Workflow Registry") ~~~ Core_R2_2("⚡ Skills") ~~~ Core_R2_3("📊 Observability")
+            Core_R1_1 ~~~ Core_R2_1
+            Core_R1_2 ~~~ Core_R2_2
+            Core_R1_3 ~~~ Core_R2_3
+        end
+
+        subgraph Middle_Top[" "]
+            direction LR
+            subgraph Context["🔍 Context Engine"]
+                direction TB
+                C1("🏢 Business Rules") ~~~ C2("🔗 Lineages") ~~~ C3("🕸️ Metadata Graph")
+            end
+
+            subgraph Workflow["⚙️ Workflow Engine"]
+                direction TB
+                W1("🗺️ Workflow Planning") ~~~ W2("📝 Registration") ~~~ W3("🔄 Execution and State Management")
+            end
+        end
+
+        subgraph Middle_Bottom[" "]
+            direction LR
+            subgraph Runtime["🤖 Agent Runtime"]
+                direction TB
+                R1("👥 Subagents") ~~~ R2("🛠️ Tool Access") ~~~ R3("⚡ Skills")
+            end
+
+            subgraph Validation["🛡️ Validation Engine"]
+                direction TB
+                V1("✅ Quality") ~~~ V2("⚖️ Reconciliation") ~~~ V3("🚧 Safety Gates")
+            end
+        end
+
+        subgraph Integration["🔌 Integration Layer"]
+            direction TB
+            Int_R1_1("🔗 MCP") ~~~ Int_R1_2("🌿 GIT") ~~~ Int_R1_3("🏭 Warehouses")
+            Int_R2_1("🗄️ Databases") ~~~ Int_R2_2("☁️ Cloud") ~~~ Int_R2_3("📖 Documentations")
+            Int_R1_1 ~~~ Int_R2_1
+            Int_R1_2 ~~~ Int_R2_2
+            Int_R1_3 ~~~ Int_R2_3
+        end
+
+        Core ~~~ Middle_Top ~~~ Middle_Bottom ~~~ Integration
+    end
+
+    %% Container Styling
+    style DB_KIT fill:#0b1120,stroke:#475569,stroke-width:2px,color:#f8fafc
+    style Core fill:#171c3a,stroke:#6366f1,stroke-width:2px,color:#c7d2fe
+    style Context fill:#0f2933,stroke:#06b6d4,stroke-width:2px,color:#cffafe
+    style Workflow fill:#132544,stroke:#3b82f6,stroke-width:2px,color:#dbeafe
+    style Runtime fill:#24173d,stroke:#a855f7,stroke-width:2px,color:#f3e8ff
+    style Validation fill:#0f2e24,stroke:#10b981,stroke-width:2px,color:#d1fae5
+    style Integration fill:#2e2111,stroke:#f59e0b,stroke-width:2px,color:#fef3c7
+    style Middle_Top fill:none,stroke:none
+    style Middle_Bottom fill:none,stroke:none
+
+    %% Node Styling
+    classDef coreNode fill:#252d59,stroke:#818cf8,stroke-width:1.5px,color:#ffffff,font-weight:bold
+    classDef contextNode fill:#163e4d,stroke:#22d3ee,stroke-width:1.5px,color:#ffffff,font-weight:bold
+    classDef workflowNode fill:#1d3866,stroke:#60a5fa,stroke-width:1.5px,color:#ffffff,font-weight:bold
+    classDef runtimeNode fill:#38235e,stroke:#c084fc,stroke-width:1.5px,color:#ffffff,font-weight:bold
+    classDef validationNode fill:#164738,stroke:#34d399,stroke-width:1.5px,color:#ffffff,font-weight:bold
+    classDef integrationNode fill:#47331a,stroke:#fbbf24,stroke-width:1.5px,color:#ffffff,font-weight:bold
+
+    class Core_R1_1,Core_R1_2,Core_R1_3,Core_R2_1,Core_R2_2,Core_R2_3 coreNode
+    class C1,C2,C3 contextNode
+    class W1,W2,W3 workflowNode
+    class R1,R2,R3 runtimeNode
+    class V1,V2,V3 validationNode
+    class Int_R1_1,Int_R1_2,Int_R1_3,Int_R2_1,Int_R2_2,Int_R2_3 integrationNode

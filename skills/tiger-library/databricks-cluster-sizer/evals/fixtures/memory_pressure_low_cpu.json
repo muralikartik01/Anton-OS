@@ -1,0 +1,20 @@
+{
+  "description": "Safety case: memory critical but CPU very low. Memory pressure must win; never downsize.",
+  "config": {
+    "cluster_id": "0101-memlowcpu",
+    "cluster_name": "wide-shuffle",
+    "driver_node_type": "Standard_D16ds_v5",
+    "worker_node_type": "Standard_D16ds_v5",
+    "worker_count": 4,
+    "min_autoscale_workers": null,
+    "max_autoscale_workers": null,
+    "auto_termination_minutes": 20,
+    "cluster_source": "UI"
+  },
+  "profile": {
+    "source": "system_tables",
+    "observed_peak_workers": 4,
+    "worker": {"sample_minutes": 120, "cpu_p50": 8.0, "cpu_p95": 12.0, "cpu_max": 20.0, "mem_p95": 95.0, "mem_max": 99.0, "swap_max": 22.0},
+    "driver": {"sample_minutes": 120, "cpu_p50": 10.0, "cpu_p95": 18.0, "cpu_max": 25.0, "mem_p95": 40.0, "mem_max": 48.0, "swap_max": 0.0}
+  }
+}
